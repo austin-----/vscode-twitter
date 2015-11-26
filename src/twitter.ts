@@ -15,7 +15,8 @@ export const Signature: string = '[](VSCODE_TWITTER_SIGNATURE)';
 export enum TimelineType {
 	Home = 1,
 	User,
-	Search
+	Search,
+	Post
 }
 
 export class TimelineFactory {
@@ -32,23 +33,34 @@ export class TimelineFactory {
 				break;
 		}
 	}
-	
-	static docs: any = {};
-	
+
+	static shouldTogglePreview: any = {};
+	static refreshTargetTimeline: Timeline;
+	static statusBarItemMain: vscode.StatusBarItem;
+	static statusBarItemRefresh: vscode.StatusBarItem;
+
+
 	static getSearchTimeline(keyword: string): Timeline {
-		return new SearchTimeline(keyword);
+		const timeline = new SearchTimeline(keyword);
+		return timeline;
+	}
+
+	static isTwitterBuffer(editor: vscode.TextEditor): boolean {
+		const firstLine = editor.document.lineAt(0).text;
+		return (firstLine.startsWith('#' + Signature));
 	}
 }
 
 export interface Timeline {
 	getNew(): Thenable<string>;
 	post(status: string): Thenable<string>;
+	getTrends(): Thenable<string>;
 	filename: vscode.Uri;
 }
 
 abstract class BaseTimeline implements Timeline {
 	client: any;
-	
+
 	protected _filename: string;
 	get filename(): vscode.Uri {
 		return vscode.Uri.parse('untitled:' + this._filename);
@@ -58,8 +70,31 @@ abstract class BaseTimeline implements Timeline {
 
 	params: any = { count: 100 };
 	endpoint: string = '';
-	
+
 	title: string;
+
+	getTrends(): Thenable<string> {
+		const self = this;
+		var params: any = {};
+		params.id = 1;
+		return new Promise((resolve, reject) => {
+			self.client.get('trends/place', params, function(error: any[], trends: any, response) {
+				if (!error) {
+					console.log(trends);
+					try {
+						const trendsArray: any[] = trends[0].trends;
+						resolve(trendsArray.map((value, index, array) => { return value.name; }).join('; '));
+					} catch (ex) {
+						resolve('');
+					}
+				} else {
+					console.error(error);
+					var msg = error.map((value, index, array) => { return value.message; }).join('; ');
+					reject(msg);
+				}
+			});
+		});
+	}
 
 	getNew(): Thenable<string> {
 		const self = this;
@@ -72,14 +107,11 @@ abstract class BaseTimeline implements Timeline {
 				if (!error) {
 					if (!(tweets instanceof Array)) {
 						tweets = tweets.statuses;
-					}
+					};
 					console.log(tweets);
-					var first = true;
+					// older tweets go first
 					tweets.reverse().forEach((value, index, array) => {
-						if (first) {
-							first = false;
-							self.since_id = value.id_str;
-						}
+						self.since_id = value.id_str;
 						// don't cache more than 1000 tweets
 						if (self.timeline.unshift(Tweet.fromJson(value)) >= 1000) {
 							self.timeline.pop();
@@ -88,7 +120,7 @@ abstract class BaseTimeline implements Timeline {
 					const result = Tweet.head1(Signature + self.title) + self.timeline.map<string>((t) => { return t.toMarkdown(); }).join('');
 					resolve(result);
 				} else {
-					console.log(error);
+					console.error(error);
 					var msg = error.map((value, index, array) => { return value.message; }).join(';');
 					reject(msg);
 				}
@@ -104,7 +136,7 @@ abstract class BaseTimeline implements Timeline {
 					console.log(data);
 					resolve('OK');
 				} else {
-					console.log(error);
+					console.error(error);
 					var msg = error.map((value, index, array) => { return value.message; }).join(';');
 					reject(msg);
 				}
@@ -168,7 +200,7 @@ class UserTimeline extends BaseTimeline {
 }
 
 class SearchTimeline extends BaseTimeline {
-	
+
 	constructor(keyword: string) {
 		super();
 		this.endpoint = 'search/tweets';

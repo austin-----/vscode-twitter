@@ -32,7 +32,7 @@ function getNewInTimeline(message: string, timeline: Timeline) {
 			const filename = timeline.filename;
 			console.log('Twitter buffer file: ' + filename);
 			vscode.workspace.openTextDocument(filename).then((doc) => {
-				TimelineFactory.docs[doc.fileName] = false;
+				TimelineFactory.shouldTogglePreview[doc.fileName] = false;
 				console.log('doc opened');
 				vscode.window.showTextDocument(doc).then((editor) => {
 					console.log('editing begins');
@@ -46,11 +46,15 @@ function getNewInTimeline(message: string, timeline: Timeline) {
 					}
 					if (needClear) {
 						doDeleteAndInsert(new vscode.Range(start, end), doc, editor, content).then(() => {
-							TimelineFactory.docs[doc.fileName] = true;
+							TimelineFactory.shouldTogglePreview[doc.fileName] = true;
+							TimelineFactory.statusBarItemRefresh.show();
+							TimelineFactory.refreshTargetTimeline = timeline;
 						});;
 					} else {
 						doInsert(doc, editor, content).then(() => {
-							TimelineFactory.docs[doc.fileName] = true;
+							TimelineFactory.shouldTogglePreview[doc.fileName] = true;
+							TimelineFactory.statusBarItemRefresh.show();
+							TimelineFactory.refreshTargetTimeline = timeline;
 						});	
 					}
 				}, (error) => {
@@ -78,26 +82,52 @@ export function twitterStart() {
 
 export function twitterTimeline() {
 	const timelines = [
-		{ label: 'Home', description: 'Home timeline', type: TimelineType.Home },
-		{ label: 'User', description: 'User timeline', type: TimelineType.User }
+		{ label: 'Home', description: 'Go to the Home Timeline', type: TimelineType.Home },
+		{ label: 'User', description: 'Go to the User Timeline', type: TimelineType.User },
+		{ label: 'Search', description: 'Search Twitter', type: TimelineType.Search },
+		{ label: 'Post', description: 'Post your status to Twitter', type: TimelineType.Post },
 	];
 	vscode.window.showQuickPick(timelines).then((v) => {
 		console.log('Type: ' + v.type + ' selected');
-		refreshTimeline(v.type);
+		switch(v.type) {
+			case TimelineType.Home:
+			case TimelineType.User:
+				refreshTimeline(v.type);
+				break;
+			case TimelineType.Search:
+				twitterSearch();
+				break;
+			case TimelineType.Post:
+				twitterPost();
+				break;
+		}
 	});
 }
 
 export function twitterSearch() {
-	vscode.window.showInputBox({
-		placeHolder: 'Search Twitter',
-		prompt: 'Search Twitter. '
-	}).then(value => {
-		if (value) {
-			console.log('Searching for ' + value);
-			const timeline = TimelineFactory.getSearchTimeline(value);
-			getNewInTimeline('Searching for ' + value + ' ...', timeline);
-		}
-	});
+	TimelineFactory.getTimeline(TimelineType.Home).getTrends().then(trends => {
+		vscode.window.showInputBox({
+			placeHolder: 'Search Twitter',
+			prompt: 'Trends: ' + trends
+		}).then(value => {
+			if (value) {
+				console.log('Searching for ' + value);
+				const timeline = TimelineFactory.getSearchTimeline(value);
+				getNewInTimeline('Searching for ' + value + ' ...', timeline);
+			}
+		});
+	}, error => {
+		vscode.window.showInputBox({
+			placeHolder: 'Search Twitter',
+			prompt: 'Search Twitter'
+		}).then(value => {
+			if (value) {
+				console.log('Searching for ' + value);
+				const timeline = TimelineFactory.getSearchTimeline(value);
+				getNewInTimeline('Searching for ' + value + ' ...', timeline);
+			}
+		});
+	});	
 }
 
 export function twitterPost() {
@@ -116,4 +146,11 @@ export function twitterPost() {
 			);
 		}
 	});
+}
+
+export function twitterRefresh() {
+	const timeline = TimelineFactory.refreshTargetTimeline;
+	if (timeline) {		
+		getNewInTimeline('Refreshing timeline...', timeline);
+	}
 }
