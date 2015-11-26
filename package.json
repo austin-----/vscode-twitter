@@ -1,0 +1,69 @@
+{
+  "name": "vscode-twitter",
+  "displayName": "Twitter",
+  "description": "Twitter in VS Code",
+  "version": "0.0.1",
+  "publisher": "austin",
+  "engines": {
+    "vscode": "^0.10.1"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:twitter.start",
+    "onCommand:twitter.post"
+  ],
+  "main": "./out/src/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "twitter.start",
+        "title": "Twitter: Display Timeline"
+      },
+      {
+        "command": "twitter.post",
+        "title": "Twitter: Post Status"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "VSCode Twitter configuration",
+      "properties": {
+        "twitter.consumerkey": {
+          "type": "string",
+          "default": "",
+          "description": "Specify the consumer key of your twitter app"
+        },
+        "twitter.consumersecret": {
+          "type": "string",
+          "default": "",
+          "description": "Specify the consumer secret of your twitter app"
+        },
+        "twitter.accesstokenkey": {
+          "type": "string",
+          "default": "",
+          "description": "Specify the access token of your twitter app"
+        },
+        "twitter.accesstokensecret": {
+          "type": "string",
+          "default": "",
+          "description": "Specify the access token secret of your twitter app"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+    "compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+  },
+  "devDependencies": {
+    "typescript": "^1.6.2",
+    "vscode": "0.10.x"
+  },
+  "dependencies": {
+    "moment": "^2.10.6",
+    "twitter": "^1.2.5",
+    "xregexp": "^3.0.0"
+  }
+}
