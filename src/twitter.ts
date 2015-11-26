@@ -15,6 +15,7 @@ export default class VSTwitter {
 	
 	static createFile(contents = ''): vscode.Uri {
 		const tmpFile = join(os.tmpdir(), "Twitter.md");
+		fs.writeFileSync(tmpFile, 'Twitter');
 		return vscode.Uri.parse('file:' + tmpFile);
 	}
 
