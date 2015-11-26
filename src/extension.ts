@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as commands from './commands';
-import {Signature} from './twitter';
+import {Signature, TimelineFactory} from './twitter';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -30,8 +30,9 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
 		const firstLine = editor.document.lineAt(0).text;
+		vscode.window.activeTextEditor.hide
 		console.log('editor changed: ' + editor.document.fileName + '(' + firstLine + ')');
-		if (firstLine.startsWith('#' + Signature)) {
+		if (firstLine.startsWith('#' + Signature) && TimelineFactory.docs[editor.document.fileName] == true) {
 			console.log('it is a twitter buffer file');
 			vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
 		}

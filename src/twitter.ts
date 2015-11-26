@@ -33,6 +33,8 @@ export class TimelineFactory {
 		}
 	}
 	
+	static docs: any = {};
+	
 	static getSearchTimeline(keyword: string): Timeline {
 		return new SearchTimeline(keyword);
 	}
@@ -134,7 +136,7 @@ abstract class BaseTimeline implements Timeline {
 			access_token_key,
 			access_token_secret
 		});
-		this._filename = 'Twitter_' + rndName() + '.md';
+		this._filename = rndName() + '.md';
 		this.timeline = new Array<Tweet>();
 	}
 }
@@ -143,7 +145,7 @@ class HomeTimeline extends BaseTimeline {
 	constructor() {
 		super();
 		this.endpoint = 'statuses/home_timeline';
-		this._filename = 'HomeTimeline_' + this._filename;
+		this._filename = 'Twitter_HomeTimeline_' + this._filename;
 		this.title = 'Home Timeline';
 	}
 
@@ -156,7 +158,7 @@ class UserTimeline extends BaseTimeline {
 	constructor() {
 		super();
 		this.endpoint = 'statuses/user_timeline';
-		this._filename = 'UserTimeline_' + this._filename;
+		this._filename = 'Twitter_UserTimeline_' + this._filename;
 		this.title = 'User Timeline';
 	}
 
@@ -170,7 +172,7 @@ class SearchTimeline extends BaseTimeline {
 	constructor(keyword: string) {
 		super();
 		this.endpoint = 'search/tweets';
-		this._filename = 'Search_' + encodeURIComponent(keyword) + '_' + this._filename;
+		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword) + '_' + this._filename;
 		this.title = 'Search for ' + keyword;
 		this.params.q = keyword;
 	}

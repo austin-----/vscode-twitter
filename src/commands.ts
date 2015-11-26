@@ -1,22 +1,58 @@
 import * as vscode from 'vscode'
 import {TimelineFactory, TimelineType, Timeline} from './twitter'
 
+function doInsert(doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<void> {
+	return editor.edit((builder) => {
+		builder.insert(new vscode.Position(0, 0), content);
+	}).then(applied => {
+		vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
+		console.log('Done');
+	}, (error) => {
+		console.error('edit failed: ');
+		console.error(error);
+		vscode.window.showErrorMessage('Twitter failed to initialize. Please run command \'Reload Window\' to fix it.');
+	});
+}
+
+function doDeleteAndInsert(range: vscode.Range, doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<void> {
+	return editor.edit((builder) => {
+		builder.delete(range);
+	}).then(applied => {
+		doInsert(doc, editor, content);
+	}, error => {
+		console.error('edit failed: ');
+		console.error(error);
+		vscode.window.showErrorMessage('Twitter failed to initialize. Please run command \'Reload Window\' to fix it.');
+	})
+}
+
 function getNewInTimeline(message: string, timeline: Timeline) {
 	vscode.window.setStatusBarMessage(message,
 		timeline.getNew().then((content) => {
 			const filename = timeline.filename;
 			console.log('Twitter buffer file: ' + filename);
 			vscode.workspace.openTextDocument(filename).then((doc) => {
+				TimelineFactory.docs[doc.fileName] = false;
+				console.log('doc opened');
 				vscode.window.showTextDocument(doc).then((editor) => {
-					editor.edit((builder) => {
-						builder.insert(new vscode.Position(0, 0), content);
-					}).then(applied => {
-						vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
-						console.log('Done');
-					}, (error) => {
-						console.error('edit failed: ' + error);
-						vscode.window.showErrorMessage('Twitter failed to initialize. Please run command \'Reload Window\' to fix it.');
-					});
+					console.log('editing begins');
+					const start = doc.lineAt(0).range.start;
+					const end = doc.lineAt(doc.lineCount - 1).range.end;
+					console.log(start);
+					console.log(end);
+					var needClear = false;
+					if (start.compareTo(end) < 0) {
+						needClear = true;
+					}
+					if (needClear) {
+						doDeleteAndInsert(new vscode.Range(start, end), doc, editor, content).then(() => {
+							TimelineFactory.docs[doc.fileName] = true;
+						});;
+					} else {
+						doInsert(doc, editor, content).then(() => {
+							TimelineFactory.docs[doc.fileName] = true;
+						});	
+					}
 				}, (error) => {
 					console.error('showTextDocument failed: ' + error);
 				});
