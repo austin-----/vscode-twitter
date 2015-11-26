@@ -45,7 +45,7 @@ export default class Tweet {
 		if (level == 0) {
 			result += '![](' + this.userImage + ') ';
 		}
-		result += Tweet.bold(this.userName) + ' [@' + this.userScreenName + ']()';
+		result += Tweet.bold(this.userName) + ' [@' + this.userScreenName.replace('_', '\uFF3F') + '](#)';
 		if (level == 0) {
 			result += ' \u2022 ' + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
 		}
@@ -61,9 +61,9 @@ export default class Tweet {
 	}
 	
 	static normalize(text: string) : string {
-		var hashtag = new XRegExp('(#\\pL+)');
-		var user = new XRegExp('(@\\pL+)');
-		return text.replace(hashtag, '[$1]()').replace(user, '[$1]()');
+		var hashtag = new XRegExp('(#[\\pL\\d_]+)', 'g');
+		var user = new XRegExp('(@[\\pL\\d_]+)', 'g');
+		return text.replace(hashtag, '[$1](#)').replace(user, '[$1](#)').replace('_', '\uFF3F');
 	}
 	
 	static fromJson(json: any) : Tweet {
@@ -71,8 +71,12 @@ export default class Tweet {
 		if (json.quoted_status) {
 			tweet.quoted = Tweet.fromJson(json.quoted_status);
 		}
-		if (json.entities.media) {
-			tweet.media = json.entities.media;
+		var entities = json.entities;
+		if (json.extended_entities) {
+			entities = json.extended_entities;
+		}
+		if (entities.media) {
+			tweet.media = entities.media;
 		}
 		return tweet;
 	}

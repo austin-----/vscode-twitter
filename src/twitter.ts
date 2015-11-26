@@ -75,14 +75,14 @@ abstract class BaseTimeline implements Timeline {
 					}
 					console.log(tweets);
 					var first = true;
-					tweets.forEach((value, index, array) => {
+					tweets.reverse().forEach((value, index, array) => {
 						if (first) {
 							first = false;
 							self.since_id = value.id_str;
 						}
 						// don't cache more than 1000 tweets
-						if (self.timeline.push(Tweet.fromJson(value)) >= 1000) {
-							self.timeline.shift();
+						if (self.timeline.unshift(Tweet.fromJson(value)) >= 1000) {
+							self.timeline.pop();
 						}
 					});
 					const result = Tweet.head1(Signature + self.title) + self.timeline.map<string>((t) => { return t.toMarkdown(); }).join('');
