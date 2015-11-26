@@ -4,10 +4,9 @@ import Twitter from './twitter'
 export function twitterStart() {
 	// Display a message box to the user
 	vscode.window.setStatusBarMessage('Refreshing timeline...',
-		new Twitter().getTimeline().then((content) => {
-			let disposables = [];
-			const filename = Twitter.createFile();
-
+		Twitter.getInstance().getTimeline().then((content) => {
+			const filename = Twitter.getInstance().filename;
+			console.log('Twitter buffer file: ' + filename);
 			vscode.workspace.openTextDocument(filename).then((doc) => {
 				vscode.window.showTextDocument(doc).then((editor) => {
 					editor.edit((builder) => {
@@ -17,6 +16,7 @@ export function twitterStart() {
 						console.log('Done');
 					}, (error) => {
 						console.error('edit failed: ' + error);
+						vscode.window.showErrorMessage('Twitter failed to initialize. Please run command \'Reload Window\' to fix it.');
 					});
 				}, (error) => {
 					console.error('showTextDocument failed: ' + error);
@@ -25,7 +25,7 @@ export function twitterStart() {
 				console.error('openTextDocument failed: ' + error);
 			});
 		}, (error: string) => {
-			vscode.window.showErrorMessage(error);
+			vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
 		})
 	);
 }
@@ -38,12 +38,10 @@ export function twitterPost() {
 		if (value) {
 			console.log("Posting... " + value);
 			vscode.window.setStatusBarMessage('Posting status...',
-				new Twitter().postStatus(value).then(result => {
-					if (result) {
-						vscode.window.showInformationMessage('Your status was posted.');
-					} else {
-						vscode.window.showErrorMessage('Failed to post your status.');
-					}
+				Twitter.getInstance().postStatus(value).then(result => {
+					vscode.window.showInformationMessage('Your status was posted.');
+				}, (error) => {
+					vscode.window.showErrorMessage('Failed to post the status: ' + error);
 				})
 			);
 		}
