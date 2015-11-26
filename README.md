@@ -26,11 +26,14 @@ Picture: Up to 3 columns of timelines in action:
 
 5. Edit 'User Settings' and add the following parameters:
 
+>    "twitter.consumerkey": "xxxx", // Consumer Key (API Key) 
 
-    "twitter.consumerkey": "xxxx", // Consumer Key (API Key) 
-    "twitter.consumersecret": "xxxx", // Consumer Secret (API Secret)
-    "twitter.accesstokenkey": "xxxx", // Access Token
-    "twitter.accesstokensecret": "xxxx" // Access Token Secret
+>    "twitter.consumersecret": "xxxx", // Consumer Secret (API Secret)
+
+>    "twitter.accesstokenkey": "xxxx", // Access Token
+
+>    "twitter.accesstokensecret": "xxxx" // Access Token Secret
+    
 
 ## Usage
 You can use the following commands:
