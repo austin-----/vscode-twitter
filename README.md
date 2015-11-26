@@ -6,7 +6,8 @@ Please go to [https://github.com/austin-----/vscode-twitter](https://github.com/
 
 ## Functionality
 Now you can use Twitter in your favorite editor.
-![](screenshots/3_columns.png)
+
+![3 Column](screenshots/3_columns.png)
 
 ## Installation
 1. Install 'Twitter' in VS Code
