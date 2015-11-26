@@ -5,8 +5,9 @@ VS Code Twitter
 Please go to [https://github.com/austin-----/vscode-twitter](https://github.com/austin-----/vscode-twitter) for source code, bug tracking, and feature request
 
 ## Functionality
-Now you can use Twitter in your favorite editor.
+Now you can look at your Twitter timeline in your favorite editor.
 
+Picture: Up to 3 columns of timelines in action:
 ![3 Column](screenshots/3_columns.png)
 
 ## Installation
@@ -36,11 +37,19 @@ You can use the following commands:
 
 * **Twitter: Display Timeline**: Check your timeline
 
+![commands](screenshots/commands.png)
+
 * **Twitter: Search**: Search Twitter
+
+![search](screenshots/search.png)
 
 * **Twitter: Select Timeline**: Select from home_timeline or user_timeline (more is coming)
 
+![select](screenshots/select.png)
+
 * **Twitter: Post Status**: to post a new tweet.
+
+![post](screenshots/post.png)
 
 ### For more information
 * [Repo](https://github.com/austin-----/vscode-twitter)
