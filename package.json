@@ -3,7 +3,7 @@
   "displayName": "Twitter",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
@@ -76,5 +76,9 @@
     "moment": "^2.10.6",
     "twitter": "^1.2.5",
     "xregexp": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/austin-----/vscode-twitter" 
   }
 }
