@@ -1,11 +1,10 @@
 import * as vscode from 'vscode'
-import Twitter from './twitter'
+import {TimelineFactory, TimelineType, Timeline} from './twitter'
 
-export function twitterStart() {
-	// Display a message box to the user
-	vscode.window.setStatusBarMessage('Refreshing timeline...',
-		Twitter.getInstance().getTimeline().then((content) => {
-			const filename = Twitter.getInstance().filename;
+function getNewInTimeline(message: string, timeline: Timeline) {
+	vscode.window.setStatusBarMessage(message,
+		timeline.getNew().then((content) => {
+			const filename = timeline.filename;
 			console.log('Twitter buffer file: ' + filename);
 			vscode.workspace.openTextDocument(filename).then((doc) => {
 				vscode.window.showTextDocument(doc).then((editor) => {
@@ -30,6 +29,41 @@ export function twitterStart() {
 	);
 }
 
+function refreshTimeline(type: TimelineType) {
+	const timeline = TimelineFactory.getTimeline(type);
+	getNewInTimeline('Refreshing timeline...', timeline);
+}
+
+export function twitterStart() {
+	// Display a message box to the user
+	const timeline = TimelineType.Home;
+	refreshTimeline(timeline);
+}
+
+export function twitterTimeline() {
+	const timelines = [
+		{ label: 'Home', description: 'Home timeline', type: TimelineType.Home },
+		{ label: 'User', description: 'User timeline', type: TimelineType.User }
+	];
+	vscode.window.showQuickPick(timelines).then((v) => {
+		console.log('Type: ' + v.type + ' selected');
+		refreshTimeline(v.type);
+	});
+}
+
+export function twitterSearch() {
+	vscode.window.showInputBox({
+		placeHolder: 'Search Twitter',
+		prompt: 'Search Twitter. '
+	}).then(value => {
+		if (value) {
+			console.log('Searching for ' + value);
+			const timeline = TimelineFactory.getSearchTimeline(value);
+			getNewInTimeline('Searching for ' + value + ' ...', timeline);
+		}
+	});
+}
+
 export function twitterPost() {
 	vscode.window.showInputBox({
 		placeHolder: 'What\'s happening?',
@@ -38,7 +72,7 @@ export function twitterPost() {
 		if (value) {
 			console.log("Posting... " + value);
 			vscode.window.setStatusBarMessage('Posting status...',
-				Twitter.getInstance().postStatus(value).then(result => {
+				TimelineFactory.getTimeline(TimelineType.Home).post(value).then(result => {
 					vscode.window.showInformationMessage('Your status was posted.');
 				}, (error) => {
 					vscode.window.showErrorMessage('Failed to post the status: ' + error);

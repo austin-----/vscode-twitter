@@ -3,7 +3,7 @@
   "displayName": "Twitter",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
@@ -13,18 +13,28 @@
   ],
   "activationEvents": [
     "onCommand:twitter.start",
-    "onCommand:twitter.post"
+    "onCommand:twitter.post",
+    "onCommand:twitter.search",
+    "onCommand:twitter.select"
   ],
   "main": "./out/src/extension",
   "contributes": {
     "commands": [
       {
         "command": "twitter.start",
-        "title": "Twitter: Display Timeline"
+        "title": "Twitter: Display Home Timeline"
       },
       {
         "command": "twitter.post",
         "title": "Twitter: Post Status"
+      },
+      {
+        "command": "twitter.search",
+        "title": "Twitter: Search"
+      },
+      {
+        "command": "twitter.select",
+        "title": "Twitter: Select Timeline"
       }
     ],
     "configuration": {

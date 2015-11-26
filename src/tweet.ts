@@ -47,13 +47,17 @@ export default class Tweet {
 		}
 		result += Tweet.bold(this.userName) + ' [@' + this.userScreenName + ']()';
 		if (level == 0) {
-			result += ' \u2022 ' + moment(this.created).fromNow();
+			result += ' \u2022 ' + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
 		}
 		return result;
 	}
 	
 	static bold(text: string) : string {
 		return '**' + text + '**';
+	}
+	
+	static head1(text: string) : string {
+		return '#' + text + '\r\n\r\n';
 	}
 	
 	static normalize(text: string) : string {
