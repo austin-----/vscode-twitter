@@ -20,6 +20,9 @@ export enum TimelineType {
 }
 
 export class TimelineFactory {
+	
+	static rndName: string = rndName();
+	
 	static getTimeline(type: TimelineType): Timeline {
 		switch (type) {
 			case TimelineType.Home:
@@ -168,7 +171,7 @@ abstract class BaseTimeline implements Timeline {
 			access_token_key,
 			access_token_secret
 		});
-		this._filename = rndName() + '.md';
+		this._filename = TimelineFactory.rndName + '.md';
 		this.timeline = new Array<Tweet>();
 	}
 }
