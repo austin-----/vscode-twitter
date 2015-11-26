@@ -12,12 +12,6 @@
     "Other"
   ],
   "activationEvents": [
-    /*
-    "onCommand:twitter.start",
-    "onCommand:twitter.post",
-    "onCommand:twitter.search",
-    "onCommand:twitter.select"
-    */
     "*"
   ],
   "main": "./out/src/extension",
