@@ -8,7 +8,7 @@ Please go to [https://github.com/austin-----/vscode-twitter](https://github.com/
 Now you can use Twitter in your favorite editor.
 
 ## Installation
-1. Install 'VSCode Twitter' in VS Code
+1. Install 'Twitter' in VS Code
 2. Register a twitter app with your twitter developer account
 3. Give the app 'Read and Write' permission and access to your account
 4. Write down the following keys and tokens:
