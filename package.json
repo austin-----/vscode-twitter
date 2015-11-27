@@ -1,9 +1,9 @@
 {
-  "name": "vscode-twitter",
-  "displayName": "Twitter",
+  "name": "a-vscode-twitter",
+  "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
