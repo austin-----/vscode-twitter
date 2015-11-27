@@ -6,6 +6,7 @@ function doInsert(doc: vscode.TextDocument, editor: vscode.TextEditor, content: 
 	return editor.edit((builder) => {
 		builder.insert(new vscode.Position(0, 0), content);
 	}).then(applied => {
+		doc.save();
 		vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
 		console.log('Done');
 	}, (error) => {

@@ -10,7 +10,7 @@ function rndName() {
 	return Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 10);
 }
 
-export const Signature: string = '[](VSCODE_TWITTER_SIGNATURE)';
+export const Signature: string = '[](VSCODETWITTERSIGNATURE';
 
 export enum TimelineType {
 	Home = 1,
@@ -21,7 +21,7 @@ export enum TimelineType {
 
 export class TimelineFactory {
 	
-	static rndName: string = rndName();
+	static rndName: string = '4';
 	
 	static getTimeline(type: TimelineType): Timeline {
 		switch (type) {
@@ -50,9 +50,24 @@ export class TimelineFactory {
 		return timeline;
 	}
 
-	static isTwitterBuffer(editor: vscode.TextEditor): boolean {
-		const firstLine = editor.document.lineAt(0).text;
-		return (firstLine.startsWith('#' + Signature));
+	static isTwitterBuffer(document: vscode.TextDocument): boolean {
+		const firstLine = document.lineAt(0).text;
+		return (firstLine.startsWith('#' + Signature + this.rndName));
+	}
+	
+	static getTimelineByDocument(document: vscode.TextDocument): Timeline {
+		const firstLine = document.lineAt(0).text;
+		if (firstLine.startsWith('#' + Signature + this.rndName)) {
+			var parts = firstLine.split('_');
+			var type = Number(parts[1]);
+			if (type == TimelineType.Home || type == TimelineType.User) {
+				return this.getTimeline(type);
+			} else if (type == TimelineType.Search) {
+				var keyword =parts[2];
+				return this.getSearchTimeline(keyword);
+			}
+		} 
+		return null;
 	}
 }
 
@@ -65,10 +80,16 @@ export interface Timeline {
 
 abstract class BaseTimeline implements Timeline {
 	client: any;
+	
+	type: TimelineType;
 
 	protected _filename: string;
 	get filename(): vscode.Uri {
-		return vscode.Uri.parse('untitled:' + this._filename);
+		const file = join(os.tmpdir(), this._filename);
+		if (!fs.existsSync(file)) {
+			fs.writeFileSync(file, '');
+		}
+		return vscode.Uri.parse('file:' + file);
 	}
 	since_id: string;
 	timeline: Tweet[];
@@ -100,6 +121,10 @@ abstract class BaseTimeline implements Timeline {
 			});
 		});
 	}
+	
+	protected signature(): string {
+		return Signature + TimelineFactory.rndName + '_' + this.type +'_)';
+	}
 
 	getNew(): Thenable<string> {
 		const self = this;
@@ -122,7 +147,7 @@ abstract class BaseTimeline implements Timeline {
 							self.timeline.pop();
 						}
 					});
-					const result = Tweet.head1(Signature + self.title) + self.timeline.map<string>((t) => { return t.toMarkdown(); }).join('');
+					const result = Tweet.head1(self.signature() + self.title) + self.timeline.map<string>((t) => { return t.toMarkdown(); }).join('');
 					resolve(result);
 				} else {
 					console.error(error);
@@ -181,6 +206,7 @@ abstract class BaseTimeline implements Timeline {
 class HomeTimeline extends BaseTimeline {
 	constructor() {
 		super();
+		this.type = TimelineType.Home;
 		this.endpoint = 'statuses/home_timeline';
 		this._filename = 'Twitter_HomeTimeline_' + this._filename;
 		this.title = 'Home Timeline';
@@ -194,6 +220,7 @@ class HomeTimeline extends BaseTimeline {
 class UserTimeline extends BaseTimeline {
 	constructor() {
 		super();
+		this.type = TimelineType.User;
 		this.endpoint = 'statuses/user_timeline';
 		this._filename = 'Twitter_UserTimeline_' + this._filename;
 		this.title = 'User Timeline';
@@ -208,9 +235,14 @@ class SearchTimeline extends BaseTimeline {
 
 	constructor(keyword: string) {
 		super();
+		this.type = TimelineType.Search;
 		this.endpoint = 'search/tweets';
-		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword) + '_' + this._filename;
+		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace('_', '__').replace('%', '_') + '_' + this._filename;
 		this.title = 'Search for ' + keyword;
 		this.params.q = keyword;
+	}
+	
+	protected signature(): string {
+		return Signature + TimelineFactory.rndName + '_' + this.type + '_' + this.params.q + '_)';
 	}
 }

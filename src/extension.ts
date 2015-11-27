@@ -38,13 +38,16 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
 		console.log('editor changed: ' + editor.document.fileName);
-		if (TimelineFactory.isTwitterBuffer(editor)) {
+		if (TimelineFactory.isTwitterBuffer(editor.document)) {
 			console.log('it is a twitter buffer file');
-			if (editor.document[TimelineFactory.shouldTogglePreview] == true) {
+			if (editor.document[TimelineFactory.shouldTogglePreview] != false) {
 				vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
 			}
 			
-			TimelineFactory.refreshTargetTimeline = editor.document[TimelineFactory.targetTimeline];			
+			if (!editor.document[TimelineFactory.targetTimeline]) {
+				editor.document[TimelineFactory.targetTimeline] = TimelineFactory.getTimelineByDocument(editor.document);
+			}
+			TimelineFactory.refreshTargetTimeline = editor.document[TimelineFactory.targetTimeline];		
 			TimelineFactory.statusBarItemRefresh.show();
 		} else {
 			TimelineFactory.statusBarItemRefresh.hide();
