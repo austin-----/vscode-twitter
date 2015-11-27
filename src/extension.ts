@@ -28,6 +28,10 @@ export function activate(context: vscode.ExtensionContext) {
 		commands.twitterSearch();
 	}));
 	
+	context.subscriptions.push(vscode.commands.registerCommand('twitter.wizard', () => {
+		commands.twitterWizard();
+	}));
+	
 	context.subscriptions.push(vscode.commands.registerCommand('twitter.refresh', () => {
 		commands.twitterRefresh();
 	}));
@@ -36,20 +40,11 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('editor changed: ' + editor.document.fileName);
 		if (TimelineFactory.isTwitterBuffer(editor)) {
 			console.log('it is a twitter buffer file');
-			if (TimelineFactory.shouldTogglePreview[editor.document.fileName] == true) {
+			if (editor.document[TimelineFactory.shouldTogglePreview] == true) {
 				vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
 			}
 			
-			if (editor.document.fileName.startsWith('Twitter_HomeTimeline')) {
-				TimelineFactory.refreshTargetTimeline = TimelineFactory.getTimeline(TimelineType.Home);
-			} else if (editor.document.fileName.startsWith('Twitter_UserTimeline')) {
-				TimelineFactory.refreshTargetTimeline = TimelineFactory.getTimeline(TimelineType.User);
-			} else if (editor.document.fileName.startsWith('Twitter_Search_')) {
-				const parts: string[] = editor.document.fileName.split('_');
-				const keyword = parts[2];
-				TimelineFactory.refreshTargetTimeline = TimelineFactory.getSearchTimeline(decodeURIComponent(keyword));
-			}
-			
+			TimelineFactory.refreshTargetTimeline = editor.document[TimelineFactory.targetTimeline];			
 			TimelineFactory.statusBarItemRefresh.show();
 		} else {
 			TimelineFactory.statusBarItemRefresh.hide();

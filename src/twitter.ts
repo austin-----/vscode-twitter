@@ -37,8 +37,10 @@ export class TimelineFactory {
 		}
 	}
 
-	static shouldTogglePreview: any = {};
+	static shouldTogglePreview: string = 'vscTwitterShouldTogglePreview';
+	static targetTimeline: string = 'vscTwitterTargetTimeline';
 	static refreshTargetTimeline: Timeline;
+	
 	static statusBarItemMain: vscode.StatusBarItem;
 	static statusBarItemRefresh: vscode.StatusBarItem;
 

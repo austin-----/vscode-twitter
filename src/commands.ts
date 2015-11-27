@@ -1,5 +1,6 @@
-import * as vscode from 'vscode'
-import {TimelineFactory, TimelineType, Timeline} from './twitter'
+import * as vscode from 'vscode';
+import {TimelineFactory, TimelineType, Timeline} from './twitter';
+import Wizard from './wizard';
 
 function doInsert(doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<void> {
 	return editor.edit((builder) => {
@@ -32,7 +33,7 @@ function getNewInTimeline(message: string, timeline: Timeline) {
 			const filename = timeline.filename;
 			console.log('Twitter buffer file: ' + filename);
 			vscode.workspace.openTextDocument(filename).then((doc) => {
-				TimelineFactory.shouldTogglePreview[doc.fileName] = false;
+				doc[TimelineFactory.shouldTogglePreview] = false;
 				console.log('doc opened');
 				vscode.window.showTextDocument(doc).then((editor) => {
 					console.log('editing begins');
@@ -46,15 +47,17 @@ function getNewInTimeline(message: string, timeline: Timeline) {
 					}
 					if (needClear) {
 						doDeleteAndInsert(new vscode.Range(start, end), doc, editor, content).then(() => {
-							TimelineFactory.shouldTogglePreview[doc.fileName] = true;
+							doc[TimelineFactory.shouldTogglePreview] = true;
+							doc[TimelineFactory.targetTimeline] = timeline;
+							TimelineFactory.refreshTargetTimeline = doc[TimelineFactory.targetTimeline];
 							TimelineFactory.statusBarItemRefresh.show();
-							TimelineFactory.refreshTargetTimeline = timeline;
-						});;
+						});
 					} else {
 						doInsert(doc, editor, content).then(() => {
-							TimelineFactory.shouldTogglePreview[doc.fileName] = true;
+							doc[TimelineFactory.shouldTogglePreview] = true;
+							doc[TimelineFactory.targetTimeline] = timeline;
+							TimelineFactory.refreshTargetTimeline = doc[TimelineFactory.targetTimeline];
 							TimelineFactory.statusBarItemRefresh.show();
-							TimelineFactory.refreshTargetTimeline = timeline;
 						});	
 					}
 				}, (error) => {
@@ -74,20 +77,23 @@ function refreshTimeline(type: TimelineType) {
 	getNewInTimeline('Refreshing timeline...', timeline);
 }
 
-export function twitterStart() {
-	// Display a message box to the user
+function twitterStartInternal() {
 	const timeline = TimelineType.Home;
 	refreshTimeline(timeline);
 }
 
-export function twitterTimeline() {
+export function twitterStart() {
+	Wizard.checkConfigurationAndRun(twitterStartInternal);
+}
+
+function twitterTimelineInternal() {
 	const timelines = [
 		{ label: 'Home', description: 'Go to the Home Timeline', type: TimelineType.Home },
 		{ label: 'User', description: 'Go to the User Timeline', type: TimelineType.User },
 		{ label: 'Search', description: 'Search Twitter', type: TimelineType.Search },
 		{ label: 'Post', description: 'Post your status to Twitter', type: TimelineType.Post },
 	];
-	vscode.window.showQuickPick(timelines).then((v) => {
+	vscode.window.showQuickPick(timelines, {matchOnDescription: true, placeHolder: 'Select a Task'}).then((v) => {
 		console.log('Type: ' + v.type + ' selected');
 		switch(v.type) {
 			case TimelineType.Home:
@@ -104,7 +110,11 @@ export function twitterTimeline() {
 	});
 }
 
-export function twitterSearch() {
+export function twitterTimeline() {
+	Wizard.checkConfigurationAndRun(twitterTimelineInternal);
+}
+
+function twitterSearchInternal() {
 	TimelineFactory.getTimeline(TimelineType.Home).getTrends().then(trends => {
 		vscode.window.showInputBox({
 			placeHolder: 'Search Twitter',
@@ -130,7 +140,12 @@ export function twitterSearch() {
 	});	
 }
 
-export function twitterPost() {
+export function twitterSearch() {
+	Wizard.checkConfigurationAndRun(twitterSearchInternal);
+}
+
+
+function twitterPostInternal() {
 	vscode.window.showInputBox({
 		placeHolder: 'What\'s happening?',
 		prompt: 'Post your status to Twitter. '
@@ -148,9 +163,21 @@ export function twitterPost() {
 	});
 }
 
-export function twitterRefresh() {
+export function twitterPost() {
+	Wizard.checkConfigurationAndRun(twitterPostInternal);
+}
+
+function twitterRefreshInternal() {
 	const timeline = TimelineFactory.refreshTargetTimeline;
-	if (timeline) {		
+	if (timeline) {
 		getNewInTimeline('Refreshing timeline...', timeline);
 	}
+}
+
+export function twitterRefresh() {
+	Wizard.checkConfigurationAndRun(twitterRefreshInternal);
+}
+
+export function twitterWizard() {
+	Wizard.setup(false);
 }

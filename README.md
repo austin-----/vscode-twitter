@@ -12,6 +12,9 @@ Picture: Up to 3 columns of timelines in action:
 
 ## Installation
 1. Install 'Twitter' in VS Code
+
+   You can also run command 'Twi Wizard' to guide you through Step 2 ~ Step 5.
+
 2. Register a twitter app with your twitter developer account
 3. Give the app 'Read and Write' permission and access to your account
 4. Write down the following keys and tokens:
@@ -36,6 +39,10 @@ Picture: Up to 3 columns of timelines in action:
     
 
 ## Usage
+A status bar item is added to launch timelines:
+
+![statusbar](screenshots/statusbar.png)
+
 You can use the following commands:
 
 * **Twitter: Display Timeline**: Check your timeline
@@ -54,7 +61,7 @@ You can use the following commands:
 
 ![post](screenshots/post.png)
 
-### For more information
+## For more information
 * [Repo](https://github.com/austin-----/vscode-twitter)
 * [VS Code Marketplace](https://marketplace.visualstudio.com/items/austin.vscode-twitter)
 
