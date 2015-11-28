@@ -39,7 +39,7 @@ export default class Tweet {
 	toMarkdown(level: number = 0) : string {
 		const quote = Tweet.quote.repeat(level);
 		var result = quote + this.formatUser(level) + Tweet.lineFeed + 
-			quote + this.normalizeText() + Tweet.lineFeed;
+			quote + this.normalizeText(quote) + Tweet.lineFeed;
 		if (this.quoted) {
 			result += this.quoted.toMarkdown(level + 1);
 		}
@@ -84,7 +84,7 @@ export default class Tweet {
 		return result;
 	}
 	
-	normalizeText(): string {
+	normalizeText(quote: string): string {
 		var result = this.text;
 		
 		// user mentions
@@ -106,6 +106,7 @@ export default class Tweet {
 			});
 		}
 		result = result.replace(/^RT '/, '**RT** ');
+		result = result.replace(/\n/g, '\n' + quote)
 		return result;
 	}
 	
