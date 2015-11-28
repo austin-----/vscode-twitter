@@ -148,7 +148,11 @@ abstract class BaseTimeline implements Timeline {
 						}
 					});
 					var result = Tweet.head1(self.signature() + self.title) + self.tweets.map<string>((t) => { return t.toMarkdown(); }).join('');
-					const videoCount = result.match(/<\/video>/gi).length;
+					const videos = result.match(/<\/video>/gi);
+					var videoCount = 0;
+					if (videos) {
+						videoCount = videos.length;
+					}
 					if (videoCount > 10) {
 						console.log('Too many videos (' + videoCount + '), disabling auto play');
 						result = result.replace(new RegExp(Tweet.autoplayControl + '>', 'g'), Tweet.videoControl + ' loop >');
