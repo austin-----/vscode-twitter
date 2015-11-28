@@ -36,6 +36,10 @@ export function activate(context: vscode.ExtensionContext) {
 		commands.twitterRefresh();
 	}));
 	
+	context.subscriptions.push(vscode.commands.registerCommand('twitter.trend', () => {
+		commands.twitterTrend();
+	}));
+	
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
 		if (editor) {
 			console.log('editor changed: ' + editor.document.fileName);

@@ -3,7 +3,7 @@
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
@@ -39,7 +39,11 @@
       },
       {
         "command": "twitter.refresh",
-        "title": "Twitter: Refresh currently Opened Timeline"
+        "title": "Twitter: Refresh current Opened Timeline"
+      },
+      {
+        "command": "twitter.trend",
+        "title": "Twitter: Trends"
       }
     ],
     "configuration": {

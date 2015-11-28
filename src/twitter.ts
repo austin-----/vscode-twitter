@@ -16,7 +16,8 @@ export enum TimelineType {
 	Home = 1,
 	User,
 	Search,
-	Post
+	Post,
+	Trend
 }
 
 export class TimelineFactory {
@@ -74,7 +75,7 @@ export class TimelineFactory {
 export interface Timeline {
 	getNew(): Thenable<string>;
 	post(status: string): Thenable<string>;
-	getTrends(): Thenable<string>;
+	getTrends(): Thenable<string[]>;
 	filename: vscode.Uri;
 }
 
@@ -99,7 +100,7 @@ abstract class BaseTimeline implements Timeline {
 
 	title: string;
 
-	getTrends(): Thenable<string> {
+	getTrends(): Thenable<string[]> {
 		const self = this;
 		var params: any = {};
 		params.id = 1;
@@ -109,7 +110,7 @@ abstract class BaseTimeline implements Timeline {
 					console.log(trends);
 					try {
 						const trendsArray: any[] = trends[0].trends;
-						resolve(trendsArray.map((value, index, array) => { return value.name; }).join('; '));
+						resolve(trendsArray.map((value, index, array) => { return value.name; }));
 					} catch (ex) {
 						resolve('');
 					}
@@ -238,7 +239,7 @@ class SearchTimeline extends BaseTimeline {
 		this.type = TimelineType.Search;
 		this.endpoint = 'search/tweets';
 		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace(/_/g, '__').replace(/%/g, '_') + '_' + this._filename;
-		this.title = 'Search for ' + keyword;
+		this.title = 'Search results: ' + keyword;
 		this.params.q = keyword;
 	}
 	
