@@ -19,6 +19,8 @@ export default class Tweet {
 	static quote: string = '>';	
 	static dotSeparator: string = ' \u2022 ';
 	static underscoreAlter: string = '\uFF3F';
+	static autoplayControl = ' autoplay loop ';
+	static videoControl = ' muted controls preload="none" ';
 
 	static userLinkPrefix: string = 'https://twitter.com/';
 	static hashTagLinkPrefix: string = 'https://twitter.com/hashtag/';
@@ -49,7 +51,7 @@ export default class Tweet {
 			var mediaStr = this.media.map<string>((value, index, array): string => {
 				var mediaStr = '';
 				if (value.type == 'video' || value.type == 'animated_gif') {
-					const control = (value.type == 'animated_gif' ? ' autoplay loop ' : ' muted controls ');
+					const control = ((value.type == 'animated_gif') ? Tweet.autoplayControl : Tweet.videoControl);
 					const variants: any[] = value.video_info.variants;
 					if (variants.length != 0) {
 						mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';

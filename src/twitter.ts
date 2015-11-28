@@ -93,7 +93,7 @@ abstract class BaseTimeline implements Timeline {
 		return vscode.Uri.parse('file:' + file);
 	}
 	since_id: string;
-	timeline: Tweet[] = [];
+	tweets: Tweet[];
 
 	params: any = { count: 100 };
 	endpoint: string = '';
@@ -139,16 +139,20 @@ abstract class BaseTimeline implements Timeline {
 					if (!(tweets instanceof Array)) {
 						tweets = tweets.statuses;
 					};
-					console.log(tweets);
 					// older tweets go first
 					tweets.reverse().forEach((value, index, array) => {
 						self.since_id = value.id_str;
 						// don't cache more than 1000 tweets
-						if (self.timeline.unshift(Tweet.fromJson(value)) >= 1000) {
-							self.timeline.pop();
+						if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
+							self.tweets.pop();
 						}
 					});
-					const result = Tweet.head1(self.signature() + self.title) + self.timeline.map<string>((t) => { return t.toMarkdown(); }).join('');
+					var result = Tweet.head1(self.signature() + self.title) + self.tweets.map<string>((t) => { return t.toMarkdown(); }).join('');
+					const videoCount = result.match(/<\/video>/gi).length;
+					if (videoCount > 10) {
+						console.log('Too many videos (' + videoCount + '), disabling auto play');
+						result = result.replace(new RegExp(Tweet.autoplayControl + '>', 'g'), Tweet.videoControl + ' loop >');
+					}
 					resolve(result);
 				} else {
 					console.error(error);
@@ -200,7 +204,7 @@ abstract class BaseTimeline implements Timeline {
 			access_token_secret
 		});
 		this._filename = TimelineFactory.rndName + '.md';
-		this.timeline = new Array<Tweet>();
+		this.tweets = new Array<Tweet>();
 	}
 }
 
@@ -234,13 +238,46 @@ class UserTimeline extends BaseTimeline {
 
 class SearchTimeline extends BaseTimeline {
 
+	searchEndPoint = 'search/tweets';
+	keyword: string;
+
 	constructor(keyword: string) {
 		super();
 		this.type = TimelineType.Search;
-		this.endpoint = 'search/tweets';
+		this.endpoint = 'statuses/lookup';
 		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace(/_/g, '__').replace(/%/g, '_') + '_' + this._filename;
 		this.title = 'Search results: ' + keyword;
-		this.params.q = keyword;
+		this.keyword = keyword;
+	}
+	
+	parentGetNew(): Thenable<string> {
+		return super.getNew();
+	}
+	
+	getNew(): Thenable<string> {
+		const self = this;
+		var params: any = this.params;
+		params.q = this.keyword;
+		return new Promise((resolve, reject) => {
+			self.client.get(self.searchEndPoint, params, function(error: any[], tweets: any, resposne) {
+				if (!error) {
+					if (!(tweets instanceof Array)) {
+						tweets = tweets.statuses;
+					};
+					self.params.id = (<any[]>tweets).map<string>((value, index, array):string => { return value.id_str; }).join(',');
+					console.log(self.params.id)
+					self.parentGetNew().then(value => {
+						resolve(value);
+					}, error => {
+						reject(error);
+					});
+				} else {
+					console.error(error);
+					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					reject(msg);
+				}
+			});
+		});
 	}
 	
 	protected signature(): string {
