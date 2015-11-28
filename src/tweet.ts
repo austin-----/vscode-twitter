@@ -37,7 +37,7 @@ export default class Tweet {
 	}
 	
 	toMarkdown(level: number = 0) : string {
-		const quote = new Array(level + 1).join(Tweet.quote);
+		const quote = Tweet.quote.repeat(level);
 		var result = quote + this.formatUser(level) + Tweet.lineFeed + 
 			quote + this.normalizeText() + Tweet.lineFeed;
 		if (this.quoted) {
