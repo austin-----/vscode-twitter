@@ -139,9 +139,6 @@ export default class Tweet {
 		}
 		
 		var entities = json.entities;
-		if (json.extended_entities) {
-			entities = json.extended_entities;
-		}
 		if (entities.user_mentions) {
 			tweet.userMentions = entities.user_mentions;
 		}
@@ -150,6 +147,10 @@ export default class Tweet {
 		}
 		if (entities.symbols) {
 			tweet.symbols = entities.symbols;
+		}
+		
+		if (json.extended_entities) {
+			entities = json.extended_entities;
 		}
 		if (entities.media) {
 			tweet.media = entities.media;
