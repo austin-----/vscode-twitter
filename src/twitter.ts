@@ -92,7 +92,7 @@ abstract class BaseTimeline implements Timeline {
 		return vscode.Uri.parse('file:' + file);
 	}
 	since_id: string;
-	timeline: Tweet[];
+	timeline: Tweet[] = [];
 
 	params: any = { count: 100 };
 	endpoint: string = '';
@@ -237,7 +237,7 @@ class SearchTimeline extends BaseTimeline {
 		super();
 		this.type = TimelineType.Search;
 		this.endpoint = 'search/tweets';
-		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace('_', '__').replace('%', '_') + '_' + this._filename;
+		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace(/_/g, '__').replace(/%/g, '_') + '_' + this._filename;
 		this.title = 'Search for ' + keyword;
 		this.params.q = keyword;
 	}

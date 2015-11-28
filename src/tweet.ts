@@ -55,9 +55,10 @@ export default class Tweet {
 			var mediaStr = this.media.map<string>((value, index, array): string => {
 				var mediaStr = '';
 				if (value.type == 'video' || value.type == 'animated_gif') {
+					const control = (value.type == 'animated_gif' ? ' autoplay loop ' : ' muted controls ');
 					const variants: any[] = value.video_info.variants;
 					if (variants.length != 0) {
-						mediaStr += '<video width="340" poster="' + value.media_url_https + '" autoplay loop>';
+						mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
 						variants.forEach((video, index, array) => {
 							mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
 						});
@@ -95,7 +96,7 @@ export default class Tweet {
 		if (level == 0) {
 			result += ' \u2022 ' + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
 		}
-		result += ' ([Detail](' + this.tweetLink() + '))'; 
+		result += ' ([Detail](' + this.tweetLink() + ')) ';
 		return result;
 	}
 	
