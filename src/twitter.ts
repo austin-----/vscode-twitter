@@ -22,7 +22,7 @@ export enum TimelineType {
 
 export class TimelineFactory {
 	
-	static rndName: string = '4';
+	static rndName: string = '5';
 	
 	static getTimeline(type: TimelineType): Timeline {
 		switch (type) {
@@ -64,7 +64,7 @@ export class TimelineFactory {
 			if (type == TimelineType.Home || type == TimelineType.User) {
 				return this.getTimeline(type);
 			} else if (type == TimelineType.Search) {
-				var keyword =parts[2];
+				var keyword = parts[2].replace(/%(?!%)/g, '_').replace(/%%/g, '%');
 				return this.getSearchTimeline(keyword);
 			}
 		} 
@@ -244,6 +244,6 @@ class SearchTimeline extends BaseTimeline {
 	}
 	
 	protected signature(): string {
-		return Signature + TimelineFactory.rndName + '_' + this.type + '_' + this.params.q + '_)';
+		return Signature + TimelineFactory.rndName + '_' + this.type + '_' + this.params.q.replace(/%/g, '%%').replace(/_/g, '%') + '_)';
 	}
 }

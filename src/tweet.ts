@@ -16,30 +16,24 @@ export default class Tweet {
 	
 	static lineFeed: string = '\r\n\r\n';
 	static endLine: string = '_____' + Tweet.lineFeed;
-	static quote: string = '>';
+	static quote: string = '>';	
+	static dotSeparator: string = ' \u2022 ';
+	static underscoreAlter: string = '\uFF3F';
+
+	static userLinkPrefix: string = 'https://twitter.com/';
+	static hashTagLinkPrefix: string = 'https://twitter.com/hashtag/';
+	static searchPrefx: string = 'https://twitter.com/search?q=';
 	
 	tweetLink(): string {
 		return 'https://twitter.com/' + this.userScreenName + '/status/' + this.id;
 	}
 	
-	userLinkPrefix(): string {
-		return 'https://twitter.com/';
-	}
-	
 	userLink(): string {
-		return this.userLinkPrefix() + this.userScreenName;
+		return Tweet.userLinkPrefix + this.userScreenName;
 	}
-	
-	hashTagLinkPrefix(): string {
-		return 'https://twitter.com/hashtag/';
-	}
-	
-	searchPrefx(): string {
-		return 'https://twitter.com/search?q='
-	}
-	
+		
 	hashTagLink(hashtag: string): string {
-		return this.hashTagLinkPrefix() + hashtag;
+		return Tweet.hashTagLinkPrefix + hashtag;
 	}
 	
 	toMarkdown(level: number = 0) : string {
@@ -77,6 +71,44 @@ export default class Tweet {
 		return result;
 	}
 	
+	formatUser(level: number) : string {
+		var result = ''
+		if (level == 0) {
+			result += '![](' + this.userImage + ') ';
+		}
+		result += Tweet.bold(this.userName) + ' [' + Tweet.normalizeUnderscore('@' + this.userScreenName) + '](' + this.userLink() + ')';
+		if (level == 0) {
+			result += Tweet.dotSeparator + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
+		}
+		result += ' ([Detail](' + this.tweetLink() + ')) ';
+		return result;
+	}
+	
+	normalizeText(): string {
+		var result = this.text;
+		
+		// user mentions
+		if (this.userMentions) {
+			this.userMentions.forEach((value, index, array) => {
+				result = result.replace('@' + value.screen_name, '[' + Tweet.normalizeUnderscore('@' + value.screen_name) + '](' + Tweet.userLinkPrefix + value.screen_name + ')');
+			});
+		}
+		
+		if (this.hashTags) {
+			this.hashTags.forEach((value, index, array) => {
+				result = result.replace('#' + value.text, '[#' + value.text + '](' + Tweet.hashTagLinkPrefix + value.text + ')');
+			});
+		}
+		
+		if (this.symbols) {
+			this.symbols.forEach((value, index, array) => {
+				result = result.replace('$' + value.text, '[$' + value.text + '](' + Tweet.searchPrefx + '$' + value.text + ')');
+			});
+		}
+		result = result.replace(/^RT '/, '**RT** ');
+		return result;
+	}
+	
 	constructor(id: string, created: string, text: string, userId: string, userName: string, userScreenName: string, userImage: string) {
 		this.id = id;
 		this.created = created;
@@ -87,17 +119,11 @@ export default class Tweet {
 		this.userImage = userImage;
 	}
 	
-	formatUser(level: number) : string {
-		var result = ''
-		if (level == 0) {
-			result += '![](' + this.userImage + ') ';
+	static normalizeUnderscore(text: string): string {
+		if (text.search(/___/) != -1) {
+			return '`' + text + '`';
 		}
-		result += Tweet.bold(this.userName) + ' [@' + this.userScreenName.replace('_', '\uFF3F') + '](' + this.userLink() + ')';
-		if (level == 0) {
-			result += ' \u2022 ' + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
-		}
-		result += ' ([Detail](' + this.tweetLink() + ')) ';
-		return result;
+		return text;
 	}
 	
 	static bold(text: string) : string {
@@ -106,31 +132,6 @@ export default class Tweet {
 	
 	static head1(text: string) : string {
 		return '#' + text + '\r\n\r\n';
-	}
-	
-	normalizeText(): string {
-		var result = this.text;
-		
-		// user mentions
-		if (this.userMentions) {
-			this.userMentions.forEach((value, index, array) => {
-				result = result.replace('@' + value.screen_name, '[@' + value.screen_name.replace('_', '\uFF3F') + '](' + this.userLinkPrefix() + value.screen_name + ')');
-			});
-		}
-		
-		if (this.hashTags) {
-			this.hashTags.forEach((value, index, array) => {
-				result = result.replace('#' + value.text, '[#' + value.text + '](' + this.hashTagLinkPrefix() + value.text + ')');
-			});
-		}
-		
-		if (this.symbols) {
-			this.symbols.forEach((value, index, array) => {
-				result = result.replace('$' + value.text, '[$' + value.text + '](' + this.searchPrefx() + '$' + value.text + ')');
-			});
-		}
-		result = result.replace(/^RT '/g, '**RT** ');
-		return result;
 	}
 	
 	static fromJson(json: any) : Tweet {
