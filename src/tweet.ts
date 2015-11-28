@@ -1,4 +1,3 @@
-var XRegExp = require('xregexp').XRegExp;
 var moment = require('moment');
 
 export default class Tweet {
@@ -11,6 +10,9 @@ export default class Tweet {
 	created: string;
 	quoted: Tweet;
 	media: any[];
+	userMentions: any[];
+	hashTags: any[];
+	symbols: any[];
 	
 	static lineFeed: string = '\r\n\r\n';
 	static endLine: string = '_____' + Tweet.lineFeed;
@@ -32,6 +34,10 @@ export default class Tweet {
 		return 'https://twitter.com/hashtag/';
 	}
 	
+	searchPrefx(): string {
+		return 'https://twitter.com/search?q='
+	}
+	
 	hashTagLink(hashtag: string): string {
 		return this.hashTagLinkPrefix() + hashtag;
 	}
@@ -39,16 +45,32 @@ export default class Tweet {
 	toMarkdown(level: number = 0) : string {
 		const quote = new Array(level + 1).join(Tweet.quote);
 		var result = quote + this.formatUser(level) + Tweet.lineFeed + 
-			quote + this.normalize(this.text) + Tweet.lineFeed;
+			quote + this.normalizeText() + Tweet.lineFeed;
 		if (this.quoted) {
 			result += this.quoted.toMarkdown(level + 1);
 		}
 		
 		if (this.media) {
-			var size = (level == 0) ? ':small' : ':thumb';
-			this.media.forEach((value, index, array) => {
-				result += quote + '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)' + Tweet.lineFeed;
-			});
+			const size = (level == 0) ? ':small' : ':thumb';
+			var mediaStr = this.media.map<string>((value, index, array): string => {
+				var mediaStr = '';
+				if (value.type == 'video' || value.type == 'animated_gif') {
+					const variants: any[] = value.video_info.variants;
+					if (variants.length != 0) {
+						mediaStr += '<video width="340" poster="' + value.media_url_https + '" autoplay loop>';
+						variants.forEach((video, index, array) => {
+							mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
+						});
+						mediaStr += '</video>';
+						return mediaStr;
+					}
+				}
+				// not video, use image
+				return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
+			}).join(' ');
+			if (mediaStr != '') {
+				result += quote + mediaStr + Tweet.lineFeed;
+			}
 		}
 		if (level == 0) result += Tweet.endLine;
 		return result;
@@ -73,7 +95,7 @@ export default class Tweet {
 		if (level == 0) {
 			result += ' \u2022 ' + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
 		}
-		result += ' [(Detail)](' + this.tweetLink() + ')'; 
+		result += ' ([Detail](' + this.tweetLink() + '))'; 
 		return result;
 	}
 	
@@ -85,11 +107,29 @@ export default class Tweet {
 		return '#' + text + '\r\n\r\n';
 	}
 	
-	normalize(text: string) : string {
-		var hashtag = new XRegExp('#([\\pL\\d_]+)', 'g');
-		var user = new XRegExp('@([\\pL\\d_]+)', 'g');
-		var rt = new XRegExp('^RT ', 'g');
-		return text.replace(hashtag, '[#$1](' + this.hashTagLinkPrefix() + '$1)').replace(user, '[@$1](' + this.userLinkPrefix() + '$1)').replace('_', '\uFF3F').replace(rt, '**RT** ');
+	normalizeText(): string {
+		var result = this.text;
+		
+		// user mentions
+		if (this.userMentions) {
+			this.userMentions.forEach((value, index, array) => {
+				result = result.replace('@' + value.screen_name, '[@' + value.screen_name.replace('_', '\uFF3F') + '](' + this.userLinkPrefix() + value.screen_name + ')');
+			});
+		}
+		
+		if (this.hashTags) {
+			this.hashTags.forEach((value, index, array) => {
+				result = result.replace('#' + value.text, '[#' + value.text + '](' + this.hashTagLinkPrefix() + value.text + ')');
+			});
+		}
+		
+		if (this.symbols) {
+			this.symbols.forEach((value, index, array) => {
+				result = result.replace('$' + value.text, '[$' + value.text + '](' + this.searchPrefx() + '$' + value.text + ')');
+			});
+		}
+		result = result.replace(/^RT '/g, '**RT** ');
+		return result;
 	}
 	
 	static fromJson(json: any) : Tweet {
@@ -97,9 +137,19 @@ export default class Tweet {
 		if (json.quoted_status) {
 			tweet.quoted = Tweet.fromJson(json.quoted_status);
 		}
+		
 		var entities = json.entities;
 		if (json.extended_entities) {
 			entities = json.extended_entities;
+		}
+		if (entities.user_mentions) {
+			tweet.userMentions = entities.user_mentions;
+		}
+		if (entities.hashtags) {
+			tweet.hashTags = entities.hashtags;
+		}
+		if (entities.symbols) {
+			tweet.symbols = entities.symbols;
 		}
 		if (entities.media) {
 			tweet.media = entities.media;

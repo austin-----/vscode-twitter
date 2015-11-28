@@ -3,7 +3,7 @@
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
@@ -80,8 +80,7 @@
   "dependencies": {
     "moment": "^2.10.6",
     "openurl": "^1.1.0",
-    "twitter": "^1.2.5",
-    "xregexp": "^3.0.0"
+    "twitter": "^1.2.5"
   },
   "repository": {
     "type": "git",
