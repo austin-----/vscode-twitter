@@ -1,5 +1,11 @@
 var moment = require('moment');
 
+enum EntityType {
+	UserMention = 1,
+	HashTag,
+	Symbol
+}
+
 export default class Tweet {
 	id: string;
 	text: string;
@@ -18,7 +24,7 @@ export default class Tweet {
 	static endLine: string = '_____' + Tweet.lineFeed;
 	static quote: string = '>';	
 	static dotSeparator: string = ' \u2022 ';
-	static underscoreAlter: string = '\uFF3F';
+	static underscoreAlter: string = '&lowbar;';
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
 
@@ -89,25 +95,46 @@ export default class Tweet {
 	normalizeText(quote: string): string {
 		var result = this.text;
 		
+		var indexArray:any[] = [];
+		
 		// user mentions
-		if (this.userMentions) {
-			this.userMentions.forEach((value, index, array) => {
-				result = result.replace('@' + value.screen_name, '[' + Tweet.normalizeUnderscore('@' + value.screen_name) + '](' + Tweet.userLinkPrefix + value.screen_name + ')');
-			});
+		if (this.userMentions) {	
+			indexArray = indexArray.concat(this.userMentions.map(u => { return {type: EntityType.UserMention, i0: u.indices[0], i1:u.indices[1], tag: u}; }));
 		}
 		
 		if (this.hashTags) {
-			this.hashTags.forEach((value, index, array) => {
-				result = result.replace('#' + value.text, '[#' + value.text + '](' + Tweet.hashTagLinkPrefix + value.text + ')');
-			});
+			indexArray = indexArray.concat(this.hashTags.map(u => { return {type: EntityType.HashTag, i0: u.indices[0], i1:u.indices[1], tag: u}; }));
 		}
 		
 		if (this.symbols) {
-			this.symbols.forEach((value, index, array) => {
-				result = result.replace('$' + value.text, '[$' + value.text + '](' + Tweet.searchPrefx + '$' + value.text + ')');
-			});
+			indexArray = indexArray.concat(this.symbols.map(u => { return {type: EntityType.Symbol, i0: u.indices[0], i1:u.indices[1], tag: u}; }));
 		}
-		result = result.replace(/^RT '/, '**RT** ');
+		
+		indexArray.sort((a, b) => { return a.i0 - b.i0; });
+		
+		var processed = '';
+		var last = 0;
+		indexArray.forEach((value, index, array) => {
+			processed += result.slice(last, value.i0);
+			var token = result.slice(value.i0, value.i1);
+			switch(value.type) {
+				case EntityType.UserMention:
+					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.userLinkPrefix + value.tag.screen_name + ')';
+					break;
+				case EntityType.HashTag:
+					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.hashTagLinkPrefix + value.tag.text + ')';
+					break;
+				case EntityType.Symbol:
+					token = '[' + token + '](' + Tweet.searchPrefx + '$' + value.tag.text + ')';
+					break;
+			}
+			processed += token;
+			last = value.i1;
+		});
+		
+		processed += result.slice(last);
+		result = processed;
+		result = result.replace(/^RT /, '**RT** ');
 		result = result.replace(/\n/g, '\n' + quote)
 		return result;
 	}
@@ -123,10 +150,7 @@ export default class Tweet {
 	}
 	
 	static normalizeUnderscore(text: string): string {
-		if (text.search(/___/) != -1) {
-			return '`' + text + '`';
-		}
-		return text;
+		return text.replace(/_/g, Tweet.underscoreAlter);
 	}
 	
 	static bold(text: string) : string {

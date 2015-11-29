@@ -250,7 +250,7 @@ class SearchTimeline extends BaseTimeline {
 		this.type = TimelineType.Search;
 		this.endpoint = 'statuses/lookup';
 		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace(/_/g, '__').replace(/%/g, '_') + '_' + this._filename;
-		this.title = 'Search results: ' + keyword;
+		this.title = 'Search results: ' + keyword.replace(/_/g, Tweet.underscoreAlter);
 		this.keyword = keyword;
 	}
 	
@@ -260,16 +260,16 @@ class SearchTimeline extends BaseTimeline {
 	
 	getNew(): Thenable<string> {
 		const self = this;
-		var params: any = this.params;
-		params.q = this.keyword;
+		this.params.q = this.keyword;
+		this.params.include_entities = false;
 		return new Promise((resolve, reject) => {
-			self.client.get(self.searchEndPoint, params, function(error: any[], tweets: any, resposne) {
+			self.client.get(self.searchEndPoint, self.params, function(error: any[], tweets: any, resposne) {
 				if (!error) {
 					if (!(tweets instanceof Array)) {
 						tweets = tweets.statuses;
 					};
 					self.params.id = (<any[]>tweets).map<string>((value, index, array):string => { return value.id_str; }).join(',');
-					console.log(self.params.id)
+					self.params.include_entities = true;
 					self.parentGetNew().then(value => {
 						resolve(value);
 					}, error => {
