@@ -4,7 +4,8 @@ import * as punycode from 'punycode';
 enum EntityType {
 	UserMention = 1,
 	HashTag,
-	Symbol
+	Symbol,
+	Url
 }
 
 export default class Tweet {
@@ -20,11 +21,14 @@ export default class Tweet {
 	userMentions: any[];
 	hashTags: any[];
 	symbols: any[];
+	urls: any[];
+	retweeted: Tweet;
 	
 	static lineFeed: string = '\r\n\r\n';
 	static endLine: string = '_____' + Tweet.lineFeed;
 	static quote: string = '>';	
 	static dotSeparator: string = ' \u2022 ';
+	static retweetSymbol: string = '\u267A';
 	static underscoreAlter: string = '&lowbar;';
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
@@ -47,6 +51,11 @@ export default class Tweet {
 	
 	toMarkdown(level: number = 0) : string {
 		const quote = Tweet.quote.repeat(level);
+		
+		if (this.retweeted) {
+			return this.formatUser(-1) + ' ' + 'Retweeted' + Tweet.lineFeed + this.retweeted.toMarkdown(level);
+		}
+		
 		var result = quote + this.formatUser(level) + Tweet.lineFeed + 
 			quote + this.normalizeText(quote) + Tweet.lineFeed;
 		if (this.quoted) {
@@ -85,11 +94,18 @@ export default class Tweet {
 		if (level == 0) {
 			result += '![](' + this.userImage + ') ';
 		}
-		result += Tweet.bold(this.userName) + ' [' + Tweet.normalizeUnderscore('@' + this.userScreenName) + '](' + this.userLink() + ')';
+		if (level == -1) {
+			result += Tweet.retweetSymbol + ' [' + this.userName + '](' + this.userLink() + ')';
+		} else {
+			result += Tweet.bold(this.userName) + ' [' + Tweet.normalizeUnderscore('@' + this.userScreenName) + '](' + this.userLink() + ')';
+		}
+		
 		if (level == 0) {
 			result += Tweet.dotSeparator + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
 		}
-		result += ' ([Detail](' + this.tweetLink() + ')) ';
+		if (level != -1) {
+			result += ' ([Detail](' + this.tweetLink() + ')) ';
+		}
 		return result;
 	}
 	
@@ -111,6 +127,10 @@ export default class Tweet {
 			indexArray = indexArray.concat(this.symbols.map(u => { return {type: EntityType.Symbol, i0: u.indices[0], i1:u.indices[1], tag: u}; }));
 		}
 		
+		if (this.urls) {
+			indexArray = indexArray.concat(this.urls.map(u => { return {type: EntityType.Url, i0: u.indices[0], i1:u.indices[1], tag: u}; }));
+		}
+		
 		indexArray.sort((a, b) => { return a.i0 - b.i0; });
 		
 		var processed = '';
@@ -128,6 +148,9 @@ export default class Tweet {
 				case EntityType.Symbol:
 					token = '[' + token + '](' + Tweet.searchPrefx + '$' + value.tag.text + ')';
 					break;
+				case EntityType.Url:
+					token = '[' + token + '](' + value.tag.url + ')';
+					break;
 			}
 			processed += token;
 			last = value.i1;
@@ -135,7 +158,8 @@ export default class Tweet {
 		
 		processed += punycode.ucs2.encode(normalized.slice(last));
 		var result = processed;
-		result = result.replace(/^RT /, '**RT** ');
+		result = result.replace(/_/g, Tweet.underscoreAlter);
+		result = result.replace(/^RT /, Tweet.bold('RT') + ' ');
 		result = result.replace(/\n/g, '\n' + quote)
 		return result;
 	}
@@ -168,6 +192,10 @@ export default class Tweet {
 			tweet.quoted = Tweet.fromJson(json.quoted_status);
 		}
 		
+		if (json.retweeted_status) {
+			tweet.retweeted = Tweet.fromJson(json.retweeted_status);
+		}
+		
 		var entities = json.entities;
 		if (entities.user_mentions) {
 			tweet.userMentions = entities.user_mentions;
@@ -177,6 +205,9 @@ export default class Tweet {
 		}
 		if (entities.symbols) {
 			tweet.symbols = entities.symbols;
+		}
+		if (entities.urls) {
+			tweet.urls = entities.urls;
 		}
 		
 		if (json.extended_entities) {
