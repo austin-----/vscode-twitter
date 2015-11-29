@@ -17,7 +17,8 @@ export enum TimelineType {
 	User,
 	Search,
 	Post,
-	Trend
+	Trend,
+	Mentions
 }
 
 export class TimelineFactory {
@@ -31,6 +32,9 @@ export class TimelineFactory {
 				break;
 			case TimelineType.User:
 				return UserTimeline.getSharedInstance();
+				break;
+			case TimelineType.Mentions:
+				return MentionsTimeline.getSharedInstance();
 				break;
 			default:
 				return HomeTimeline.getSharedInstance();
@@ -61,7 +65,7 @@ export class TimelineFactory {
 		if (firstLine.startsWith('#' + Signature + this.rndName)) {
 			var parts = firstLine.split('_');
 			var type = Number(parts[1]);
-			if (type == TimelineType.Home || type == TimelineType.User) {
+			if (type == TimelineType.Home || type == TimelineType.User || type == TimelineType.Mentions) {
 				return this.getTimeline(type);
 			} else if (type == TimelineType.Search) {
 				var keyword = SearchTimeline.decodeKeyword(parts[2]);
@@ -237,6 +241,20 @@ class UserTimeline extends BaseTimeline {
 
 	protected static createInstance(): Timeline {
 		return new UserTimeline();
+	}
+}
+
+class MentionsTimeline extends BaseTimeline {
+	constructor() {
+		super();
+		this.type = TimelineType.Mentions;
+		this.endpoint = 'statuses/mentions_timeline';
+		this._filename = 'Twitter_MentionsTimeline_' + this._filename;
+		this.title = 'Mentions Timeline';
+	}
+	
+	protected static createInstance(): Timeline {
+		return new MentionsTimeline();
 	}
 }
 

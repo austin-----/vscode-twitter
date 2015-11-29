@@ -45,7 +45,7 @@ A status bar item is added to launch timelines:
 
 You can use the following commands:
 
-* **Twitter: Display Timeline**: Check your timeline
+* **Twitter: Display Timeline**: Check your home timeline
 
 ![commands](screenshots/commands.png)
 
@@ -53,13 +53,15 @@ You can use the following commands:
 
 ![search](screenshots/search.png)
 
-* **Twitter: Select Timeline**: Select from home_timeline or user_timeline (more is coming)
+* **Twitter: Select Timeline**: Select from home_timeline user_timeline, or mentions_timeline; or perform other actions.
 
 ![select](screenshots/select.png)
 
 * **Twitter: Post Status**: to post a new tweet.
 
 ![post](screenshots/post.png)
+
+* **Twitter: Trends**: Look at Twitter trends
 
 ## For more information
 * [Repo](https://github.com/austin-----/vscode-twitter)

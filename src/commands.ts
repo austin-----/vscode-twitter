@@ -91,6 +91,7 @@ function twitterTimelineInternal() {
 	const timelines = [
 		{ label: 'Home', description: 'Go to the Home Timeline', type: TimelineType.Home },
 		{ label: 'User', description: 'Go to the User Timeline', type: TimelineType.User },
+		{ label: 'Mentions', description: 'Go to the Mentions Timeline', type: TimelineType.Mentions },
 		{ label: 'Search', description: 'Search Twitter', type: TimelineType.Search },
 		{ label: 'Trends', description: 'Twitter Trends', type: TimelineType.Trend },
 		{ label: 'Post', description: 'Post your status to Twitter', type: TimelineType.Post },
@@ -101,6 +102,7 @@ function twitterTimelineInternal() {
 			switch (v.type) {
 				case TimelineType.Home:
 				case TimelineType.User:
+				case TimelineType.Mentions:
 					refreshTimeline(v.type);
 					break;
 				case TimelineType.Search:
