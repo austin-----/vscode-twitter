@@ -1,4 +1,5 @@
 var moment = require('moment');
+import * as punycode from 'punycode';
 
 enum EntityType {
 	UserMention = 1,
@@ -93,7 +94,7 @@ export default class Tweet {
 	}
 	
 	normalizeText(quote: string): string {
-		var result = this.text;
+		var normalized:number[] = <any>punycode.ucs2.decode(this.text);
 		
 		var indexArray:any[] = [];
 		
@@ -115,8 +116,8 @@ export default class Tweet {
 		var processed = '';
 		var last = 0;
 		indexArray.forEach((value, index, array) => {
-			processed += result.slice(last, value.i0);
-			var token = result.slice(value.i0, value.i1);
+			processed += punycode.ucs2.encode(normalized.slice(last, value.i0));
+			var token = punycode.ucs2.encode(normalized.slice(value.i0, value.i1));
 			switch(value.type) {
 				case EntityType.UserMention:
 					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.userLinkPrefix + value.tag.screen_name + ')';
@@ -132,8 +133,8 @@ export default class Tweet {
 			last = value.i1;
 		});
 		
-		processed += result.slice(last);
-		result = processed;
+		processed += punycode.ucs2.encode(normalized.slice(last));
+		var result = processed;
 		result = result.replace(/^RT /, '**RT** ');
 		result = result.replace(/\n/g, '\n' + quote)
 		return result;
