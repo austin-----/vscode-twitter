@@ -76,7 +76,7 @@ export interface Timeline {
 	getNew(): Thenable<string>;
 	post(status: string): Thenable<string>;
 	getTrends(): Thenable<string[]>;
-	filename: vscode.Uri;
+	filename: string;
 }
 
 abstract class BaseTimeline implements Timeline {
@@ -85,12 +85,12 @@ abstract class BaseTimeline implements Timeline {
 	type: TimelineType;
 
 	protected _filename: string;
-	get filename(): vscode.Uri {
+	get filename(): string {
 		const file = join(os.tmpdir(), this._filename);
 		if (!fs.existsSync(file)) {
 			fs.writeFileSync(file, '');
 		}
-		return vscode.Uri.parse('file:' + file);
+		return file;
 	}
 	since_id: string;
 	tweets: Tweet[];
@@ -249,7 +249,7 @@ class SearchTimeline extends BaseTimeline {
 		super();
 		this.type = TimelineType.Search;
 		this.endpoint = 'statuses/lookup';
-		this._filename = 'Twitter_Search_' + encodeURIComponent(keyword).replace(/_/g, '__').replace(/%/g, '_') + '_' + this._filename;
+		this._filename = 'Twitter_Search_' + SearchTimeline.encodeForFilename(keyword) + '_' + this._filename;
 		this.title = 'Search results: ' + keyword.replace(/_/g, Tweet.underscoreAlter);
 		this.keyword = keyword;
 	}
@@ -286,6 +286,20 @@ class SearchTimeline extends BaseTimeline {
 	
 	protected signature(): string {
 		return Signature + TimelineFactory.rndName + '_' + this.type + '_' + SearchTimeline.encodeKeyword(this.params.q) + '_)';
+	}
+	
+	static encodeForFilename(text: string): string {
+		const badCharacters = [
+			'<', '>', ':', '"', '/', '\\\\', '\\|', '\\?', '\\*'
+		];
+		var result = text;
+		badCharacters.forEach(c => {
+			const re = new RegExp(c, 'g');
+			result = result.replace(re, encodeURIComponent(c.slice(-1)));
+		});
+		result = result.replace(/\./g, '.1').replace(/%/g, '.0').replace(/\*/g, '.2');
+		console.log(result);
+		return result;
 	}
 	
 	static encodeKeyword(text: string): string {

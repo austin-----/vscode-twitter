@@ -32,8 +32,8 @@ function getNewInTimeline(message: string, timeline: Timeline) {
 	vscode.window.setStatusBarMessage(message,
 		timeline.getNew().then((content) => {
 			const filename = timeline.filename;
-			console.log('Twitter buffer file: ' + filename.fsPath);
-			vscode.workspace.openTextDocument(filename.fsPath).then((doc) => {
+			console.log('Twitter buffer file: ' + filename);
+			vscode.workspace.openTextDocument(filename).then((doc) => {
 				doc[TimelineFactory.shouldTogglePreview] = false;
 				console.log('Twitter doc opened');
 				vscode.window.showTextDocument(doc).then((editor) => {
