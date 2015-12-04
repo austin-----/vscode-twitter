@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import Controller from './controller';
 import {TimelineType} from './twitter';
 
-export default class View {
+export default class View implements vscode.Disposable {
 	private statusBarItemMain: vscode.StatusBarItem;
 	private statusBarItemRefresh: vscode.StatusBarItem;
 	
@@ -69,5 +69,10 @@ export default class View {
 			{ label: 'Post', description: 'Post your status to Twitter', type: TimelineType.Post },
 		];
 		return vscode.window.showQuickPick(timelines, { matchOnDescription: true, placeHolder: 'Select a Task' });
+	}
+	
+	dispose() {
+		this.statusBarItemMain.dispose();
+		this.statusBarItemRefresh.dispose();
 	}
 }

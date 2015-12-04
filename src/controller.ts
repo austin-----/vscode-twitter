@@ -213,5 +213,6 @@ export default class Controller implements vscode.Disposable {
 
 	dispose() {
 		this.deactivate();
+		this.view.dispose();
 	}
 }
