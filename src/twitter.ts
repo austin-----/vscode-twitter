@@ -42,13 +42,8 @@ export class TimelineFactory {
 		}
 	}
 
-	static shouldTogglePreview: string = 'vscTwitterShouldTogglePreview';
 	static targetTimeline: string = 'vscTwitterTargetTimeline';
 	static refreshTargetTimeline: Timeline;
-	
-	static statusBarItemMain: vscode.StatusBarItem;
-	static statusBarItemRefresh: vscode.StatusBarItem;
-
 
 	static getSearchTimeline(keyword: string): Timeline {
 		const timeline = new SearchTimeline(keyword);
@@ -81,11 +76,12 @@ export interface Timeline {
 	post(status: string): Thenable<string>;
 	getTrends(): Thenable<string[]>;
 	filename: string;
+	refreshInProgress: boolean;
 }
 
 abstract class BaseTimeline implements Timeline {
 	client: any;
-	
+	refreshInProgress: boolean = false;
 	type: TimelineType;
 
 	protected _filename: string;
