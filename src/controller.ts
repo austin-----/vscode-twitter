@@ -50,12 +50,12 @@ export default class Controller implements vscode.Disposable {
 		}
 	}
 
-	private refreshTimeline(message: string, timeline: Timeline) {
+	private refreshTimeline(message: string, timeline: Timeline, newWindow: boolean = false) {
 		const self = this;
 		vscode.window.setStatusBarMessage(message,
 			timeline.getNew().then((content) => {
 				timeline.refreshInProgress = true;
-				Document.openDocument(timeline.filename, content).then(() => {
+				Document.openDocument(timeline.filename, content, newWindow).then(() => {
 					self.view.showRefreshButton();
 					vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
 					timeline.refreshInProgress = false;
@@ -66,6 +66,18 @@ export default class Controller implements vscode.Disposable {
 				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
 			})
 		);
+	}
+	
+	private openSearchTimeline(value: string) {
+		console.log('Searching for ' + value);
+		const timeline = TimelineFactory.getSearchTimeline(value);
+		this.refreshTimeline('Searching for ' + value + ' ...', timeline, true);
+	}
+	
+	private openUserTimeline(value: string) {
+		console.log('Searching for @' + value);
+		const timeline = TimelineFactory.getUserTimeline(value);
+		this.refreshTimeline('Searching for @' + value + ' ...', timeline, true);
 	}
 	
 	private refreshTimelineOfType(type: TimelineType) {
@@ -89,9 +101,7 @@ export default class Controller implements vscode.Disposable {
 		const self = this;
 		this.view.showSearchInputBox().then(value => {
 			if (value) {
-				console.log('Searching for ' + value);
-				const timeline = TimelineFactory.getSearchTimeline(value);
-				self.refreshTimeline('Searching for ' + value + ' ...', timeline);
+				self.openSearchTimeline(value);
 			}
 		});
 	}
@@ -130,9 +140,7 @@ export default class Controller implements vscode.Disposable {
 		TimelineFactory.getTimeline(TimelineType.Home).getTrends().then(trend => {
 			vscode.window.showQuickPick(trend, { matchOnDescription: true, placeHolder: 'Select a Trend' }).then(value => {
 				if (value) {
-					console.log('Searching for ' + value);
-					const timeline = TimelineFactory.getSearchTimeline(value);
-					self.refreshTimeline('Searching for ' + value + ' ...', timeline);
+					self.openSearchTimeline(value);
 				}
 			});
 		}, error => {
@@ -183,6 +191,8 @@ export default class Controller implements vscode.Disposable {
 		const self = this;
 		Wizard.checkConfigurationAndRun(() => { self.twitterTimelineInternal(); });
 	}
+	
+	private app: any = require('express')();
 
 	activate() {
 		const self = this;
@@ -205,6 +215,20 @@ export default class Controller implements vscode.Disposable {
 
 		this.extensionContext.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => { self.onEditorChange(editor); }));
 		this.view.activate();
+
+		// respond with "hello world" when a GET request is made to the homepage
+		this.app.get('/search/:q', function(req, res) {
+  			res.send('Searching for ' + req.params.q);
+			self.openSearchTimeline(req.params.q);
+		});
+		this.app.get('/user/:screen_name', function(req, res) {
+  			res.send('Searching for @' + req.params.screen_name);
+			self.openUserTimeline(req.params.screen_name);
+		});
+		this.app.get('/image/:img', function(req, res) {
+			res.send('<a onclick="iframe.iframe.contentWindow.history.back();">Back</a><br><img src="' + decodeURIComponent(req.params.img) + '">');
+		});
+		this.app.listen(3456);
 	}
 
 	deactivate() {

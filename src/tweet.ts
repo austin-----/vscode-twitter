@@ -33,9 +33,20 @@ export default class Tweet {
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
 
-	static userLinkPrefix: string = 'https://twitter.com/';
-	static hashTagLinkPrefix: string = 'https://twitter.com/hashtag/';
-	static searchPrefx: string = 'https://twitter.com/search?q=';
+	static serviceUrl = 'http://localhost:3456/';
+	static get userLinkPrefix(): string {
+		//return 'https://twitter.com/';
+		return this.serviceUrl + 'user/';
+	} 
+	static get hashTagLinkPrefix(): string {
+		//return 'https://twitter.com/hashtag/';
+		return this.serviceUrl + 'search/%23';
+	}
+	
+	static get searchPrefix(): string {
+		//return 'https://twitter.com/search?q=';
+		return this.serviceUrl + 'search/';
+	}
 	
 	tweetLink(): string {
 		return 'https://twitter.com/' + this.userScreenName + '/status/' + this.id;
@@ -43,10 +54,6 @@ export default class Tweet {
 	
 	userLink(): string {
 		return Tweet.userLinkPrefix + this.userScreenName;
-	}
-		
-	hashTagLink(hashtag: string): string {
-		return Tweet.hashTagLinkPrefix + hashtag;
 	}
 	
 	toMarkdown(level: number = 0) : string {
@@ -79,7 +86,8 @@ export default class Tweet {
 					}
 				}
 				// not video, use image
-				return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
+				//return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
+				return '<a href="' + value.media_url_https + ':large' + '">![](' + value.media_url_https + size + ')</a>';
 			}).join(' ');
 			if (mediaStr != '') {
 				result += quote + mediaStr + Tweet.lineFeed;
@@ -95,9 +103,9 @@ export default class Tweet {
 			result += '![](' + this.userImage + ') ';
 		}
 		if (level == -1) {
-			result += Tweet.retweetSymbol + ' [' + this.userName + '](' + this.userLink() + ')';
+			result += Tweet.retweetSymbol + ' ' + this.createLink(this.userName, this.userLink());
 		} else {
-			result += Tweet.bold(this.userName) + ' [' + Tweet.normalizeUnderscore('@' + this.userScreenName) + '](' + this.userLink() + ')';
+			result += Tweet.bold(this.userName) + ' ' + this.createLink(Tweet.normalizeUnderscore('@' + this.userScreenName), this.userLink());
 		}
 		
 		if (level == 0) {
@@ -107,6 +115,11 @@ export default class Tweet {
 			result += ' ([Detail](' + this.tweetLink() + ')) ';
 		}
 		return result;
+	}
+	
+	createLink(text: string, url: string): string {
+		//return '[' + text + '](' + url + ')';
+		return '<a onclick="xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', false);xhttp.send();" >' + text + '</a>';
 	}
 	
 	normalizeText(quote: string): string {
@@ -140,16 +153,16 @@ export default class Tweet {
 			var token = punycode.ucs2.encode(normalized.slice(value.i0, value.i1));
 			switch(value.type) {
 				case EntityType.UserMention:
-					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.userLinkPrefix + value.tag.screen_name + ')';
+					token = this.createLink(Tweet.normalizeUnderscore(token), Tweet.userLinkPrefix + value.tag.screen_name);
 					break;
 				case EntityType.HashTag:
-					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.hashTagLinkPrefix + value.tag.text + ')';
+					token = this.createLink(Tweet.normalizeUnderscore(token), Tweet.hashTagLinkPrefix + value.tag.text);
 					break;
 				case EntityType.Symbol:
-					token = '[' + token + '](' + Tweet.searchPrefx + '$' + value.tag.text + ')';
+					token = this.createLink(token, Tweet.searchPrefix + '$' + value.tag.text);
 					break;
 				case EntityType.Url:
-					token = '[' + token + '](' + value.tag.url + ')';
+					token = this.createLink(token, value.tag.url);
 					break;
 			}
 			processed += token;

@@ -82,6 +82,7 @@
     "vscode": "0.10.x"
   },
   "dependencies": {
+    "express": "^4.13.3",
     "moment": "^2.10.6",
     "openurl": "^1.1.0",
     "twitter": "^1.2.5"

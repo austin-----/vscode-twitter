@@ -26,11 +26,12 @@ export default class Document {
 		})
 	}
 
-	static openDocument(filename: string, content: string): Thenable<void> {
+	static openDocument(filename: string, content: string, newWindow:boolean = false): Thenable<void> {
 		console.log('Twitter buffer file: ' + filename);
 		return vscode.workspace.openTextDocument(filename).then((doc) => {
 			console.log('Twitter doc opened');
-			return vscode.window.showTextDocument(doc).then((editor) => {
+			const column:vscode.ViewColumn = newWindow ? vscode.ViewColumn.Three : vscode.ViewColumn.One;
+			return vscode.window.showTextDocument(doc, column).then((editor) => {
 				console.log('Twitter edit begins');
 				const start = doc.lineAt(0).range.start;
 				const end = doc.lineAt(doc.lineCount - 1).range.end;

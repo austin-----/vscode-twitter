@@ -49,6 +49,11 @@ export class TimelineFactory {
 		const timeline = new SearchTimeline(keyword);
 		return timeline;
 	}
+	
+	static getUserTimeline(screenName: string): Timeline {
+		const timeline = new UserTimeline(screenName);
+		return timeline;
+	}
 
 	static isTwitterBuffer(document: vscode.TextDocument): boolean {
 		const firstLine = document.lineAt(0).text;
@@ -227,12 +232,15 @@ class HomeTimeline extends BaseTimeline {
 }
 
 class UserTimeline extends BaseTimeline {
-	constructor() {
+	constructor(screenName: string = null) {
 		super();
 		this.type = TimelineType.User;
 		this.endpoint = 'statuses/user_timeline';
-		this._filename = 'Twitter_UserTimeline_' + this._filename;
-		this.title = 'User Timeline';
+		this._filename = 'Twitter_UserTimeline' + (screenName == null ? '' : '_' + screenName ) + '_' + this._filename;
+		this.title = 'User Timeline' + (screenName == null ? '' : ': @' + screenName);
+		if (screenName != null) {
+			this.params.screen_name = screenName;
+		}
 	}
 
 	protected static createInstance(): Timeline {
