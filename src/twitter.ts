@@ -18,12 +18,13 @@ export enum TimelineType {
 	Search,
 	Post,
 	Trend,
-	Mentions
+	Mentions,
+	Image
 }
 
 export class TimelineFactory {
 	
-	static rndName: string = '6';
+	static rndName: string = '7';
 	
 	static getTimeline(type: TimelineType): Timeline {
 		switch (type) {
@@ -54,6 +55,11 @@ export class TimelineFactory {
 		const timeline = new UserTimeline(screenName);
 		return timeline;
 	}
+	
+	static getImageView(url: string): Timeline {
+		const timeline = new ImageView(url);
+		return timeline;
+	}
 
 	static isTwitterBuffer(document: vscode.TextDocument): boolean {
 		const firstLine = document.lineAt(0).text;
@@ -70,6 +76,9 @@ export class TimelineFactory {
 			} else if (type == TimelineType.Search) {
 				var keyword = SearchTimeline.decodeKeyword(parts[2]);
 				return this.getSearchTimeline(keyword);
+			} else if (type == TimelineType.Image) {
+				const url = firstLine.split(')')[1];
+				return this.getImageView(url);
 			}
 		} 
 		return null;
@@ -330,5 +339,21 @@ class SearchTimeline extends BaseTimeline {
 	
 	static decodeKeyword(text: string): string {
 		return text.replace(/%2/g, '_').replace(/%1/g, '%');
+	}
+}
+
+class ImageView extends BaseTimeline {
+	url: string;
+	
+	constructor(url: string) {
+		super();
+		this.type = TimelineType.Image;
+		this.url = url;
+		this._filename = 'Twitter_Image_' + this._filename;
+	}
+	
+	getNew(): Thenable<string> {
+		console.log('Construct image view');
+		return Promise.resolve(Tweet.head1(this.signature() + this.url) + '\r\n![](' + this.url + ')');
 	}
 }

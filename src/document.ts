@@ -6,7 +6,7 @@ export default class Document {
 			builder.insert(new vscode.Position(0, 0), content);
 		}).then(applied => {
 			doc.save();
-			console.log('Twitter edit done');
+			console.log('Twitter edit done: ' + applied);
 		}, (error) => {
 			console.error('Twitter edit failed: ');
 			console.error(error);
@@ -18,7 +18,9 @@ export default class Document {
 		return editor.edit((builder) => {
 			builder.delete(range);
 		}).then(applied => {
-			this.doInsert(doc, editor, content);
+			doc.save();
+			console.log('Twitter delete done: ' + applied);
+			return this.doInsert(doc, editor, content);
 		}, error => {
 			console.error('edit failed: ');
 			console.error(error);
@@ -30,7 +32,7 @@ export default class Document {
 		console.log('Twitter buffer file: ' + filename);
 		return vscode.workspace.openTextDocument(filename).then((doc) => {
 			console.log('Twitter doc opened');
-			const column:vscode.ViewColumn = newWindow ? vscode.ViewColumn.Three : vscode.ViewColumn.One;
+			const column:vscode.ViewColumn = newWindow ? vscode.ViewColumn.Two : vscode.ViewColumn.One;
 			return vscode.window.showTextDocument(doc, column).then((editor) => {
 				console.log('Twitter edit begins');
 				const start = doc.lineAt(0).range.start;
@@ -40,22 +42,18 @@ export default class Document {
 					needClear = true;
 				}
 				if (needClear) {
-					return this.doDeleteAndInsert(new vscode.Range(start, end), doc, editor, content).then(() => {
-						return Promise.resolve();
-					});
+					return this.doDeleteAndInsert(new vscode.Range(start, end), doc, editor, content);
 				} else {
-					return this.doInsert(doc, editor, content).then(() => {
-						return Promise.resolve();
-					});
+					return this.doInsert(doc, editor, content);
 				}
 			}, (error) => {
 				console.error('showTextDocument failed: ');
-				console.error(error);
+				console.error(JSON.stringify(error));
 				return Promise.reject(error);
 			});
 		}, (error) => {
 			console.error('openTextDocument failed: ');
-			console.error(error);
+			console.error(JSON.stringify(error));
 			return Promise.reject(error);
 		});
 	}

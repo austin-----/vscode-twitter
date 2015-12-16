@@ -57,6 +57,7 @@ export default class Controller implements vscode.Disposable {
 				timeline.refreshInProgress = true;
 				Document.openDocument(timeline.filename, content, newWindow).then(() => {
 					self.view.showRefreshButton();
+					console.log('toggle preview');
 					vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
 					timeline.refreshInProgress = false;
 				}, (error) => {
@@ -78,6 +79,12 @@ export default class Controller implements vscode.Disposable {
 		console.log('Searching for @' + value);
 		const timeline = TimelineFactory.getUserTimeline(value);
 		this.refreshTimeline('Searching for @' + value + ' ...', timeline, true);
+	}
+	
+	private openImage(url: string) {
+		console.log('Opening image ' + url);
+		const timeline = TimelineFactory.getImageView(url);
+		this.refreshTimeline('Opening image ' + url + ' ...', timeline, true);
 	}
 	
 	private refreshTimelineOfType(type: TimelineType) {
@@ -226,7 +233,8 @@ export default class Controller implements vscode.Disposable {
 			self.openUserTimeline(req.params.screen_name);
 		});
 		this.app.get('/image/:img', function(req, res) {
-			res.send('<a onclick="iframe.iframe.contentWindow.history.back();">Back</a><br><img src="' + decodeURIComponent(req.params.img) + '">');
+			const image = decodeURIComponent(req.params.img);
+			self.openImage(image);
 		});
 		this.app.listen(3456);
 	}

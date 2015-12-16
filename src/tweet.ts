@@ -48,6 +48,10 @@ export default class Tweet {
 		return this.serviceUrl + 'search/';
 	}
 	
+	static get imagePrefix(): string {
+		return this.serviceUrl + 'image/';
+	}
+	
 	tweetLink(): string {
 		return 'https://twitter.com/' + this.userScreenName + '/status/' + this.id;
 	}
@@ -87,7 +91,7 @@ export default class Tweet {
 				}
 				// not video, use image
 				//return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
-				return '<a href="' + value.media_url_https + ':large' + '">![](' + value.media_url_https + size + ')</a>';
+				return this.createLink('![](' + value.media_url_https + size + ')', Tweet.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
 			}).join(' ');
 			if (mediaStr != '') {
 				result += quote + mediaStr + Tweet.lineFeed;
@@ -119,7 +123,7 @@ export default class Tweet {
 	
 	createLink(text: string, url: string): string {
 		//return '[' + text + '](' + url + ')';
-		return '<a onclick="xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', false);xhttp.send();" >' + text + '</a>';
+		return '<a onclick="xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);xhttp.send();" >' + text + '</a>';
 	}
 	
 	normalizeText(quote: string): string {
