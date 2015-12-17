@@ -4,13 +4,13 @@ import {TimelineFactory, TimelineType, Timeline} from './twitter';
 import Wizard from './wizard';
 import View from './view';
 import Document from './document';
+import * as fs from 'fs';
 
 export default class Controller implements vscode.Disposable {
 	private extensionContext: vscode.ExtensionContext;
 	private event: events.EventEmitter = new events.EventEmitter();
 	private timelineForRefresh: Timeline;
 	private view: View;
-	private refreshTimelineInProgress: boolean = false;
 
 	static CmdStart: string = 'twitter.start';
 	static CmdPost: string = 'twitter.post';
@@ -38,14 +38,15 @@ export default class Controller implements vscode.Disposable {
 			if (TimelineFactory.isTwitterBuffer(editor.document)) {
 				console.log('it is a twitter buffer file');
 				this.timelineForRefresh = TimelineFactory.getTimelineByDocument(editor.document);
-				if (!this.timelineForRefresh.refreshInProgress) {
+				const doc = editor.document as any;
+				if (doc.refreshInProgress != true) {
+					console.log('toggle preview');
 					vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
 				}
 				
 				this.view.showRefreshButton();
 			} else {
 				this.view.hideRefreshButton();
-				this.timelineForRefresh = null;
 			}
 		}
 	}
@@ -54,14 +55,16 @@ export default class Controller implements vscode.Disposable {
 		const self = this;
 		vscode.window.setStatusBarMessage(message,
 			timeline.getNew().then((content) => {
-				timeline.refreshInProgress = true;
-				Document.openDocument(timeline.filename, content, newWindow).then(() => {
+				Document.openDocument(timeline.filename, content, newWindow).then((doc) => {
+					self.timelineForRefresh = timeline;
 					self.view.showRefreshButton();
 					console.log('toggle preview');
 					vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
-					timeline.refreshInProgress = false;
-				}, (error) => {
-					timeline.refreshInProgress = false;
+					doc[Document.LockKey] = false;
+				}, (doc) => {
+					if (doc != null) {
+						doc[Document.LockKey] = false;
+					}
 				});
 			}, (error: string) => {
 				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
@@ -75,9 +78,9 @@ export default class Controller implements vscode.Disposable {
 		this.refreshTimeline('Searching for ' + value + ' ...', timeline, true);
 	}
 	
-	private openUserTimeline(value: string) {
+	private openOtherUserTimeline(value: string) {
 		console.log('Searching for @' + value);
-		const timeline = TimelineFactory.getUserTimeline(value);
+		const timeline = TimelineFactory.getOtherUserTimeline(value);
 		this.refreshTimeline('Searching for @' + value + ' ...', timeline, true);
 	}
 	
@@ -230,11 +233,24 @@ export default class Controller implements vscode.Disposable {
 		});
 		this.app.get('/user/:screen_name', function(req, res) {
   			res.send('Searching for @' + req.params.screen_name);
-			self.openUserTimeline(req.params.screen_name);
+			self.openOtherUserTimeline(req.params.screen_name);
 		});
 		this.app.get('/image/:img', function(req, res) {
 			const image = decodeURIComponent(req.params.img);
+			res.send('Opening image ' + image);
 			self.openImage(image);
+		});
+		this.app.get('/refresh/:signature', function(req, res) {
+			res.send('Refreshing');
+			const signature = decodeURIComponent(req.params.signature);
+			const timeline = TimelineFactory.getTimelineBySignature('#' + signature);
+			timeline.getNew().then((content) => {
+				fs.writeFileSync(timeline.filename, content);
+				console.log('toggle preview');
+				vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
+			}, (error: string) => {
+				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
+			})
 		});
 		this.app.listen(3456);
 	}

@@ -1,12 +1,16 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 
 export default class Document {
-	private static doInsert(doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<void> {
+	static LockKey = 'refreshInProgress';
+	
+	private static doInsert(doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<vscode.TextDocument> {
 		return editor.edit((builder) => {
 			builder.insert(new vscode.Position(0, 0), content);
 		}).then(applied => {
 			doc.save();
 			console.log('Twitter edit done: ' + applied);
+			return doc;
 		}, (error) => {
 			console.error('Twitter edit failed: ');
 			console.error(error);
@@ -14,11 +18,10 @@ export default class Document {
 		});
 	}
 
-	private static doDeleteAndInsert(range: vscode.Range, doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<void> {
+	private static doDeleteAndInsert(range: vscode.Range, doc: vscode.TextDocument, editor: vscode.TextEditor, content: string): Thenable<vscode.TextDocument> {
 		return editor.edit((builder) => {
 			builder.delete(range);
 		}).then(applied => {
-			doc.save();
 			console.log('Twitter delete done: ' + applied);
 			return this.doInsert(doc, editor, content);
 		}, error => {
@@ -28,10 +31,11 @@ export default class Document {
 		})
 	}
 
-	static openDocument(filename: string, content: string, newWindow:boolean = false): Thenable<void> {
+	static openDocument(filename: string, content: string, newWindow:boolean = false): Thenable<vscode.TextDocument> {
 		console.log('Twitter buffer file: ' + filename);
 		return vscode.workspace.openTextDocument(filename).then((doc) => {
 			console.log('Twitter doc opened');
+			doc[Document.LockKey] = true;
 			const column:vscode.ViewColumn = newWindow ? vscode.ViewColumn.Two : vscode.ViewColumn.One;
 			return vscode.window.showTextDocument(doc, column).then((editor) => {
 				console.log('Twitter edit begins');
@@ -49,12 +53,12 @@ export default class Document {
 			}, (error) => {
 				console.error('showTextDocument failed: ');
 				console.error(JSON.stringify(error));
-				return Promise.reject(error);
+				return Promise.reject(doc);
 			});
 		}, (error) => {
 			console.error('openTextDocument failed: ');
 			console.error(JSON.stringify(error));
-			return Promise.reject(error);
+			return Promise.reject(null);
 		});
 	}
 }
