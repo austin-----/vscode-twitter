@@ -4,7 +4,6 @@ import {TimelineType} from './twitter';
 
 export default class View implements vscode.Disposable {
 	private statusBarItemMain: vscode.StatusBarItem;
-	private statusBarItemRefresh: vscode.StatusBarItem;
 	
 	activate() {
 		this.statusBarItemMain = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 6);
@@ -12,19 +11,6 @@ export default class View implements vscode.Disposable {
 		this.statusBarItemMain.tooltip = 'Twitter in VS Code';
 		this.statusBarItemMain.command = Controller.CmdSelect;
 		this.statusBarItemMain.show();
-
-		this.statusBarItemRefresh = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 5);
-		this.statusBarItemRefresh.text = '$(sync)Refresh';
-		this.statusBarItemRefresh.tooltip = 'Refresh the current timeline';
-		this.statusBarItemRefresh.command = Controller.CmdRefresh;
-	}
-	
-	showRefreshButton() {
-		this.statusBarItemRefresh.show();
-	}
-	
-	hideRefreshButton() {
-		this.statusBarItemRefresh.hide();
 	}
 	
 	showPostInputBox(): Thenable<string> {
@@ -73,6 +59,5 @@ export default class View implements vscode.Disposable {
 	
 	dispose() {
 		this.statusBarItemMain.dispose();
-		this.statusBarItemRefresh.dispose();
 	}
 }

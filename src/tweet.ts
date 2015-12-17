@@ -1,5 +1,6 @@
 var moment = require('moment');
 import * as punycode from 'punycode';
+import * as vscode from 'vscode';
 
 enum EntityType {
 	UserMention = 1,
@@ -29,27 +30,38 @@ export default class Tweet {
 	static quote: string = '>';	
 	static dotSeparator: string = ' \u2022 ';
 	static retweetSymbol: string = '\u267A';
+	static refresh: string = '\u27f2';
 	static underscoreAlter: string = '&lowbar;';
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
 
-	static serviceUrl = 'http://localhost:3456/';
+	static get servicePort(): string {
+		var configuration = vscode.workspace.getConfiguration('twitter');
+		var port = configuration.get<number>('localServicePort');
+		return port.toString();
+	}
+	
+	static get serviceUrl(): string {
+	 	return 'http://localhost:' + this.servicePort + '/';
+	}
+	
 	static get userLinkPrefix(): string {
-		//return 'https://twitter.com/';
 		return this.serviceUrl + 'user/';
 	} 
 	static get hashTagLinkPrefix(): string {
-		//return 'https://twitter.com/hashtag/';
 		return this.serviceUrl + 'search/%23';
 	}
 	
 	static get searchPrefix(): string {
-		//return 'https://twitter.com/search?q=';
 		return this.serviceUrl + 'search/';
 	}
 	
 	static get imagePrefix(): string {
 		return this.serviceUrl + 'image/';
+	}
+	
+	static createReload(signature: string): string {
+		return Tweet.createLink(Tweet.refresh, Tweet.serviceUrl + 'refresh/' + encodeURIComponent(signature);
 	}
 	
 	tweetLink(): string {

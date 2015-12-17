@@ -174,7 +174,7 @@ abstract class BaseTimeline implements Timeline {
 							self.tweets.pop();
 						}
 					});
-					var result = Tweet.head1(self.signature() + self.title + ' (' + Tweet.createLink('Refresh', Tweet.serviceUrl + 'refresh/' + encodeURIComponent(self.signature())) + ')') + self.tweets.map<string>((t) => { return t.toMarkdown(); }).join('');
+					var result = Tweet.head1(self.signature() + self.title + ' ' + Tweet.createReload(self.signature())) + self.tweets.map<string>((t) => { return t.toMarkdown(); }).join('');
 					const videos = result.match(/<\/video>/gi);
 					var videoCount = 0;
 					if (videos) {

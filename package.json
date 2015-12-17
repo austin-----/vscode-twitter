@@ -3,7 +3,7 @@
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
@@ -38,10 +38,6 @@
         "title": "Twitter: Setup Wizard"
       },
       {
-        "command": "twitter.refresh",
-        "title": "Twitter: Refresh current Opened Timeline"
-      },
-      {
         "command": "twitter.trend",
         "title": "Twitter: Trends"
       }
@@ -69,6 +65,11 @@
           "type": "string",
           "default": "",
           "description": "Specify the access token secret of your twitter app"
+        },
+        "twitter.localServicePort": {
+          "type": "number",
+          "default": 3456,
+          "description": "Specify the port that the local service will listen on"
         }
       }
     }
