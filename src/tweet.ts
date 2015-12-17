@@ -1,6 +1,7 @@
 var moment = require('moment');
 import * as punycode from 'punycode';
 import * as vscode from 'vscode';
+import * as querystring from 'querystring';
 
 enum EntityType {
 	UserMention = 1,
@@ -61,7 +62,7 @@ export default class Tweet {
 	}
 	
 	static createReload(signature: string): string {
-		return Tweet.createLink(Tweet.refresh, Tweet.serviceUrl + 'refresh/' + encodeURIComponent(signature));
+		return Tweet.createLink(Tweet.refresh, Tweet.serviceUrl + 'refresh/' + querystring.escape(signature));
 	}
 	
 	tweetLink(): string {

@@ -4,6 +4,7 @@ import {TimelineFactory, TimelineType, Timeline} from './twitter';
 import Wizard from './wizard';
 import View from './view';
 import Document from './document';
+import * as querystring from 'querystring';
 
 export default class Controller implements vscode.Disposable {
 	private extensionContext: vscode.ExtensionContext;
@@ -207,7 +208,7 @@ export default class Controller implements vscode.Disposable {
 		});
 		this.app.get('/refresh/:signature', function(req, res) {
 			res.send('Refreshing');
-			const signature = decodeURIComponent(req.params.signature);
+			const signature = querystring.unescape(req.params.signature);
 			const timeline = TimelineFactory.getTimelineBySignature('#' + signature);
 			timeline.getNew().then((content) => {
 				Document.openDocument(timeline.filename, content, false);
