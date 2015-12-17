@@ -61,7 +61,7 @@ export default class Tweet {
 	}
 	
 	static createReload(signature: string): string {
-		return Tweet.createLink(Tweet.refresh, Tweet.serviceUrl + 'refresh/' + encodeURIComponent(signature);
+		return Tweet.createLink(Tweet.refresh, Tweet.serviceUrl + 'refresh/' + encodeURIComponent(signature));
 	}
 	
 	tweetLink(): string {
