@@ -7,16 +7,12 @@ export default class Document {
 		console.log('Twitter buffer file: ' + filename);
 		fs.writeFileSync(filename, content);
 		
-		if (newWindow) {
-			vscode.workspace.openTextDocument(filename).then((doc) => {
-				vscode.window.showTextDocument(doc, vscode.ViewColumn.Three);
+        const column = newWindow ? vscode.ViewColumn.Two : null;
+        vscode.workspace.openTextDocument(filename).then((doc) => {
+				vscode.window.showTextDocument(doc, column);
 			}, (error) => {
 				console.error('openTextDocument failed: ');
 				console.error(JSON.stringify(error));
 			});
-		} else {
-			console.log('toggle preview');
-			vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
-		}
 	}
 }

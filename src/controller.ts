@@ -41,11 +41,11 @@ export default class Controller implements vscode.Disposable {
 		}
 	}
 
-	private openTimeline(message: string, timeline: Timeline) {
+	private openTimeline(message: string, timeline: Timeline, newWindow: boolean) {
 		const self = this;
 		vscode.window.setStatusBarMessage(message,
 			timeline.getNew().then((content) => {
-				Document.openDocument(timeline.filename, content, true);
+				Document.openDocument(timeline.filename, content, newWindow);
 			}, (error: string) => {
 				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
 			})
@@ -55,24 +55,24 @@ export default class Controller implements vscode.Disposable {
 	private openSearchTimeline(value: string) {
 		console.log('Searching for ' + value);
 		const timeline = TimelineFactory.getSearchTimeline(value);
-		this.openTimeline('Searching for ' + value + ' ...', timeline);
+		this.openTimeline('Searching for ' + value + ' ...', timeline, false);
 	}
 	
 	private openOtherUserTimeline(value: string) {
 		console.log('Searching for @' + value);
 		const timeline = TimelineFactory.getOtherUserTimeline(value);
-		this.openTimeline('Searching for @' + value + ' ...', timeline);
+		this.openTimeline('Searching for @' + value + ' ...', timeline, false);
 	}
 	
 	private openImage(url: string) {
 		console.log('Opening image ' + url);
 		const timeline = TimelineFactory.getImageView(url);
-		this.openTimeline('Opening image ' + url + ' ...', timeline);
+		this.openTimeline('Opening image ' + url + ' ...', timeline, true);
 	}
 	
-	private refreshTimelineOfType(type: TimelineType) {
+	private openTimelineOfType(type: TimelineType) {
 		const timeline = TimelineFactory.getTimeline(type);
-		this.openTimeline('Refreshing timeline...', timeline);
+		this.openTimeline('Refreshing timeline...', timeline, false);
 	}
 
 	private twitterSearchInternal() {
@@ -132,7 +132,7 @@ export default class Controller implements vscode.Disposable {
 	}
 
 	private twitterStartInternal() {
-		this.refreshTimelineOfType(TimelineType.Home);
+		this.openTimelineOfType(TimelineType.Home);
 	}
 
 	private onTwitterStart() {
@@ -149,7 +149,7 @@ export default class Controller implements vscode.Disposable {
 					case TimelineType.Home:
 					case TimelineType.User:
 					case TimelineType.Mentions:
-						self.refreshTimelineOfType(v.type);
+						self.openTimelineOfType(v.type);
 						break;
 					case TimelineType.Search:
 						self.twitterSearchInternal();
