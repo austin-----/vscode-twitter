@@ -31,7 +31,7 @@ export default class Tweet {
 	static quote: string = '>';	
 	static dotSeparator: string = ' \u2022 ';
 	static retweetSymbol: string = '\u267A';
-	static refresh: string = '\u27f2';
+	static refresh: string = '\u27F3';
 	static underscoreAlter: string = '&lowbar;';
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
