@@ -1,5 +1,7 @@
 var moment = require('moment');
 import * as punycode from 'punycode';
+import * as vscode from 'vscode';
+import * as querystring from 'querystring';
 
 enum EntityType {
 	UserMention = 1,
@@ -29,13 +31,39 @@ export default class Tweet {
 	static quote: string = '>';	
 	static dotSeparator: string = ' \u2022 ';
 	static retweetSymbol: string = '\u267A';
+	static refresh: string = '\u27F3';
 	static underscoreAlter: string = '&lowbar;';
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
 
-	static userLinkPrefix: string = 'https://twitter.com/';
-	static hashTagLinkPrefix: string = 'https://twitter.com/hashtag/';
-	static searchPrefx: string = 'https://twitter.com/search?q=';
+    static fixServicePort(content: string): string {
+        return content.replace(/http\:\/\/localhost\:[0-9]+\//g, this.serviceUrl);
+    }
+
+	static servicePort: string;
+	
+	static get serviceUrl(): string {
+	 	return 'http://localhost:' + this.servicePort + '/';
+	}
+	
+	static get userLinkPrefix(): string {
+		return this.serviceUrl + 'user/';
+	} 
+	static get hashTagLinkPrefix(): string {
+		return this.serviceUrl + 'search/%23';
+	}
+	
+	static get searchPrefix(): string {
+		return this.serviceUrl + 'search/';
+	}
+	
+	static get imagePrefix(): string {
+		return this.serviceUrl + 'image/';
+	}
+	
+	static createReload(signature: string): string {
+		return Tweet.createLink(Tweet.refresh, Tweet.serviceUrl + 'refresh/' + querystring.escape(signature));
+	}
 	
 	tweetLink(): string {
 		return 'https://twitter.com/' + this.userScreenName + '/status/' + this.id;
@@ -43,10 +71,6 @@ export default class Tweet {
 	
 	userLink(): string {
 		return Tweet.userLinkPrefix + this.userScreenName;
-	}
-		
-	hashTagLink(hashtag: string): string {
-		return Tweet.hashTagLinkPrefix + hashtag;
 	}
 	
 	toMarkdown(level: number = 0) : string {
@@ -79,7 +103,8 @@ export default class Tweet {
 					}
 				}
 				// not video, use image
-				return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
+				//return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
+				return Tweet.createLink('![](' + value.media_url_https + size + ')', Tweet.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
 			}).join(' ');
 			if (mediaStr != '') {
 				result += quote + mediaStr + Tweet.lineFeed;
@@ -95,9 +120,9 @@ export default class Tweet {
 			result += '![](' + this.userImage + ') ';
 		}
 		if (level == -1) {
-			result += Tweet.retweetSymbol + ' [' + this.userName + '](' + this.userLink() + ')';
+			result += Tweet.retweetSymbol + ' ' + Tweet.createLink(this.userName, this.userLink());
 		} else {
-			result += Tweet.bold(this.userName) + ' [' + Tweet.normalizeUnderscore('@' + this.userScreenName) + '](' + this.userLink() + ')';
+			result += Tweet.bold(this.userName) + ' ' + Tweet.createLink(Tweet.normalizeUnderscore('@' + this.userScreenName), this.userLink());
 		}
 		
 		if (level == 0) {
@@ -107,6 +132,11 @@ export default class Tweet {
 			result += ' ([Detail](' + this.tweetLink() + ')) ';
 		}
 		return result;
+	}
+	
+	static createLink(text: string, url: string): string {
+		//return '[' + text + '](' + url + ')';
+		return '<a onclick="xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);xhttp.send();" >' + text + '</a>';
 	}
 	
 	normalizeText(quote: string): string {
@@ -140,13 +170,13 @@ export default class Tweet {
 			var token = punycode.ucs2.encode(normalized.slice(value.i0, value.i1));
 			switch(value.type) {
 				case EntityType.UserMention:
-					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.userLinkPrefix + value.tag.screen_name + ')';
+					token = Tweet.createLink(Tweet.normalizeUnderscore(token), Tweet.userLinkPrefix + value.tag.screen_name);
 					break;
 				case EntityType.HashTag:
-					token = '[' + Tweet.normalizeUnderscore(token) + '](' + Tweet.hashTagLinkPrefix + value.tag.text + ')';
+					token = Tweet.createLink(Tweet.normalizeUnderscore(token), Tweet.hashTagLinkPrefix + value.tag.text);
 					break;
 				case EntityType.Symbol:
-					token = '[' + token + '](' + Tweet.searchPrefx + '$' + value.tag.text + ')';
+					token = Tweet.createLink(token, Tweet.searchPrefix + '$' + value.tag.text);
 					break;
 				case EntityType.Url:
 					token = '[' + token + '](' + value.tag.url + ')';

@@ -3,7 +3,7 @@
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "publisher": "austin",
   "engines": {
     "vscode": "^0.10.1"
@@ -36,10 +36,6 @@
       {
         "command": "twitter.wizard",
         "title": "Twitter: Setup Wizard"
-      },
-      {
-        "command": "twitter.refresh",
-        "title": "Twitter: Refresh current Opened Timeline"
       },
       {
         "command": "twitter.trend",
@@ -82,6 +78,7 @@
     "vscode": "0.10.x"
   },
   "dependencies": {
+    "express": "^4.13.3",
     "moment": "^2.10.6",
     "openurl": "^1.1.0",
     "twitter": "^1.2.5"

@@ -3,21 +3,20 @@ import * as vscode from 'vscode'
 import {TimelineFactory, TimelineType, Timeline} from './twitter';
 import Wizard from './wizard';
 import View from './view';
-import Document from './document';
+import {Document, WindowBehavior} from './document';
+import Tweet from './tweet';
+import * as querystring from 'querystring';
 
 export default class Controller implements vscode.Disposable {
 	private extensionContext: vscode.ExtensionContext;
 	private event: events.EventEmitter = new events.EventEmitter();
-	private timelineForRefresh: Timeline;
 	private view: View;
-	private refreshTimelineInProgress: boolean = false;
 
 	static CmdStart: string = 'twitter.start';
 	static CmdPost: string = 'twitter.post';
 	static CmdSelect: string = 'twitter.select';
 	static CmdSearch: string = 'twitter.search';
 	static CmdWizard: string = 'twitter.wizard';
-	static CmdRefresh: string = 'twitter.refresh';
 	static CmdTrend: string = 'twitter.trend';
 
 	constructor(context: vscode.ExtensionContext, view: View) {
@@ -37,61 +36,56 @@ export default class Controller implements vscode.Disposable {
 			console.log('editor changed: ' + editor.document.fileName);
 			if (TimelineFactory.isTwitterBuffer(editor.document)) {
 				console.log('it is a twitter buffer file');
-				this.timelineForRefresh = TimelineFactory.getTimelineByDocument(editor.document);
-				if (!this.timelineForRefresh.refreshInProgress) {
-					vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-				}
-				
-				this.view.showRefreshButton();
-			} else {
-				this.view.hideRefreshButton();
-				this.timelineForRefresh = null;
+                Document.fixDocument(editor.document.fileName, () => {
+                    console.log('toggle preview');
+                    // a hack to force the preview window to refresh its content
+                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                });
 			}
 		}
 	}
 
-	private refreshTimeline(message: string, timeline: Timeline) {
+	private openTimeline(message: string, timeline: Timeline, newWindow: boolean) {
 		const self = this;
 		vscode.window.setStatusBarMessage(message,
 			timeline.getNew().then((content) => {
-				timeline.refreshInProgress = true;
-				Document.openDocument(timeline.filename, content).then(() => {
-					self.view.showRefreshButton();
-					vscode.commands.executeCommand("workbench.action.markdown.togglePreview");
-					timeline.refreshInProgress = false;
-				}, (error) => {
-					timeline.refreshInProgress = false;
-				});
+				Document.openDocument(timeline.filename, content, newWindow ? WindowBehavior.ColumnTwo : WindowBehavior.ColumnOne);
 			}, (error: string) => {
 				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
 			})
 		);
 	}
 	
-	private refreshTimelineOfType(type: TimelineType) {
+	private openSearchTimeline(value: string) {
+		console.log('Searching for ' + value);
+		const timeline = TimelineFactory.getSearchTimeline(value);
+		this.openTimeline('Searching for ' + value + ' ...', timeline, false);
+	}
+	
+	private openOtherUserTimeline(value: string) {
+		console.log('Searching for @' + value);
+		const timeline = TimelineFactory.getOtherUserTimeline(value);
+		this.openTimeline('Searching for @' + value + ' ...', timeline, false);
+	}
+	
+	private openImage(url: string) {
+		console.log('Opening image ' + url);
+		const timeline = TimelineFactory.getImageView(url);
+		this.openTimeline('Opening image ' + url + ' ...', timeline, true);
+	}
+	
+	private openTimelineOfType(type: TimelineType) {
 		const timeline = TimelineFactory.getTimeline(type);
-		this.refreshTimeline('Refreshing timeline...', timeline);
-	}
-
-	private twitterRefreshInternal() {
-		const timeline = this.timelineForRefresh;
-		if (timeline) {
-			this.refreshTimeline('Refreshing timeline...', timeline);
-		}
-	}
-
-	private onTwitterRefresh() {
-		const self = this;
-		Wizard.checkConfigurationAndRun(() => { self.twitterRefreshInternal(); });
+		this.openTimeline('Refreshing timeline...', timeline, false);
 	}
 
 	private twitterSearchInternal() {
 		const self = this;
 		this.view.showSearchInputBox().then(value => {
 			if (value) {
-				console.log('Searching for ' + value);
-				const timeline = TimelineFactory.getSearchTimeline(value);
-				self.refreshTimeline('Searching for ' + value + ' ...', timeline);
+				self.openSearchTimeline(value);
 			}
 		});
 	}
@@ -130,9 +124,7 @@ export default class Controller implements vscode.Disposable {
 		TimelineFactory.getTimeline(TimelineType.Home).getTrends().then(trend => {
 			vscode.window.showQuickPick(trend, { matchOnDescription: true, placeHolder: 'Select a Trend' }).then(value => {
 				if (value) {
-					console.log('Searching for ' + value);
-					const timeline = TimelineFactory.getSearchTimeline(value);
-					self.refreshTimeline('Searching for ' + value + ' ...', timeline);
+					self.openSearchTimeline(value);
 				}
 			});
 		}, error => {
@@ -146,7 +138,7 @@ export default class Controller implements vscode.Disposable {
 	}
 
 	private twitterStartInternal() {
-		this.refreshTimelineOfType(TimelineType.Home);
+		this.openTimelineOfType(TimelineType.Home);
 	}
 
 	private onTwitterStart() {
@@ -163,7 +155,7 @@ export default class Controller implements vscode.Disposable {
 					case TimelineType.Home:
 					case TimelineType.User:
 					case TimelineType.Mentions:
-						self.refreshTimelineOfType(v.type);
+						self.openTimelineOfType(v.type);
 						break;
 					case TimelineType.Search:
 						self.twitterSearchInternal();
@@ -183,6 +175,8 @@ export default class Controller implements vscode.Disposable {
 		const self = this;
 		Wizard.checkConfigurationAndRun(() => { self.twitterTimelineInternal(); });
 	}
+	
+	private app: any = require('express')();
 
 	activate() {
 		const self = this;
@@ -192,7 +186,6 @@ export default class Controller implements vscode.Disposable {
 		this.registerCommand(Controller.CmdSelect);
 		this.registerCommand(Controller.CmdSearch);
 		this.registerCommand(Controller.CmdWizard);
-		this.registerCommand(Controller.CmdRefresh);
 		this.registerCommand(Controller.CmdTrend);
 
 		this.event.on(Controller.CmdStart, () => { self.onTwitterStart(); });
@@ -200,11 +193,47 @@ export default class Controller implements vscode.Disposable {
 		this.event.on(Controller.CmdSelect, () => { self.onTwitterTimeline(); });
 		this.event.on(Controller.CmdSearch, () => { self.onTwitterSearch(); });
 		this.event.on(Controller.CmdWizard, () => { self.onTwitterWizard(); });
-		this.event.on(Controller.CmdRefresh, () => { self.onTwitterRefresh(); });
 		this.event.on(Controller.CmdTrend, () => { self.onTwitterTrend(); });
 
 		this.extensionContext.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => { self.onEditorChange(editor); }));
 		this.view.activate();
+
+		// respond with "hello world" when a GET request is made to the homepage
+		this.app.get('/search/:q', function(req, res) {
+  			res.send('Searching for ' + req.params.q);
+			self.openSearchTimeline(req.params.q);
+		});
+		this.app.get('/user/:screen_name', function(req, res) {
+  			res.send('Searching for @' + req.params.screen_name);
+			self.openOtherUserTimeline(req.params.screen_name);
+		});
+		this.app.get('/image/:img', function(req, res) {
+			const image = decodeURIComponent(req.params.img);
+			res.send('Opening image ' + image);
+			self.openImage(image);
+		});
+		this.app.get('/refresh/:signature', function(req, res) {
+			res.send('Refreshing');
+			const signature = querystring.unescape(req.params.signature);
+			const timeline = TimelineFactory.getTimelineBySignature('#' + signature);
+			timeline.getNew().then((content) => {
+				Document.openDocument(timeline.filename, content, WindowBehavior.CurrentWindow);
+			}, (error: string) => {
+				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
+			})
+		});
+		
+		var configuration = vscode.workspace.getConfiguration('twitter');
+		var port = configuration.get<number>('localServicePort')
+		try {
+			const port = this.app.listen(0).address().port;
+            console.log('Local service listening on port ' + port);
+            Tweet.servicePort = port.toString();
+		} catch (error) {
+			vscode.window.showErrorMessage('Twitter local service failed to listen on port ' + port);
+		}
+        
+        vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
 	}
 
 	deactivate() {
