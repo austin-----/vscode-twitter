@@ -232,8 +232,9 @@ export default class Controller implements vscode.Disposable {
 		} catch (error) {
 			vscode.window.showErrorMessage('Twitter local service failed to listen on port ' + port);
 		}
-        
-        vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+        if (vscode.window.activeTextEditor == null) {
+            vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+        }
 	}
 
 	deactivate() {
