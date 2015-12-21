@@ -3,7 +3,8 @@ import * as vscode from 'vscode'
 import {TimelineFactory, TimelineType, Timeline} from './twitter';
 import Wizard from './wizard';
 import View from './view';
-import Document from './document';
+import {Document, WindowBehavior} from './document';
+import Tweet from './tweet';
 import * as querystring from 'querystring';
 
 export default class Controller implements vscode.Disposable {
@@ -35,8 +36,13 @@ export default class Controller implements vscode.Disposable {
 			console.log('editor changed: ' + editor.document.fileName);
 			if (TimelineFactory.isTwitterBuffer(editor.document)) {
 				console.log('it is a twitter buffer file');
-				console.log('toggle preview');
-				vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                Document.fixDocument(editor.document.fileName, () => {
+                    console.log('toggle preview');
+                    // a hack to force the preview window to refresh its content
+                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                });
 			}
 		}
 	}
@@ -45,7 +51,7 @@ export default class Controller implements vscode.Disposable {
 		const self = this;
 		vscode.window.setStatusBarMessage(message,
 			timeline.getNew().then((content) => {
-				Document.openDocument(timeline.filename, content, newWindow);
+				Document.openDocument(timeline.filename, content, newWindow ? WindowBehavior.ColumnTwo : WindowBehavior.ColumnOne);
 			}, (error: string) => {
 				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
 			})
@@ -211,7 +217,7 @@ export default class Controller implements vscode.Disposable {
 			const signature = querystring.unescape(req.params.signature);
 			const timeline = TimelineFactory.getTimelineBySignature('#' + signature);
 			timeline.getNew().then((content) => {
-				Document.openDocument(timeline.filename, content, false);
+				Document.openDocument(timeline.filename, content, WindowBehavior.CurrentWindow);
 			}, (error: string) => {
 				vscode.window.showErrorMessage('Failed to retrieve timeline: ' + error);
 			})
@@ -220,10 +226,14 @@ export default class Controller implements vscode.Disposable {
 		var configuration = vscode.workspace.getConfiguration('twitter');
 		var port = configuration.get<number>('localServicePort')
 		try {
-			this.app.listen(port);
+			const port = this.app.listen(0).address().port;
+            console.log('Local service listening on port ' + port);
+            Tweet.servicePort = port.toString();
 		} catch (error) {
 			vscode.window.showErrorMessage('Twitter local service failed to listen on port ' + port);
 		}
+        
+        vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
 	}
 
 	deactivate() {

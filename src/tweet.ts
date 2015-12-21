@@ -36,11 +36,11 @@ export default class Tweet {
 	static autoplayControl = ' autoplay loop ';
 	static videoControl = ' muted controls preload="none" ';
 
-	static get servicePort(): string {
-		var configuration = vscode.workspace.getConfiguration('twitter');
-		var port = configuration.get<number>('localServicePort');
-		return port.toString();
-	}
+    static fixServicePort(content: string): string {
+        return content.replace(/http\:\/\/localhost\:[0-9]+\//g, this.serviceUrl);
+    }
+
+	static servicePort: string;
 	
 	static get serviceUrl(): string {
 	 	return 'http://localhost:' + this.servicePort + '/';

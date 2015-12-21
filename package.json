@@ -65,11 +65,6 @@
           "type": "string",
           "default": "",
           "description": "Specify the access token secret of your twitter app"
-        },
-        "twitter.localServicePort": {
-          "type": "number",
-          "default": 3456,
-          "description": "Specify the port that the local service will listen on"
         }
       }
     }
