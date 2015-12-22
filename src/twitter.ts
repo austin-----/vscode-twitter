@@ -103,7 +103,7 @@ export interface Timeline {
 	getNew(): Thenable<string>;
 	post(status: string): Thenable<string>;
     reply(content: string, id: string): Thenable<string>;
-	getTrends(): Thenable<string[]>;
+	getTrends(): Thenable<any[]>;
     like(id: string, unlike: boolean): Thenable<string>;
     retweet(id: string): Thenable<string>;
 	filename: string;
@@ -130,7 +130,7 @@ abstract class BaseTimeline implements Timeline {
 
 	title: string;
 
-	getTrends(): Thenable<string[]> {
+	getTrends(): Thenable<any[]> {
 		const self = this;
 		var params: any = {};
 		params.id = 1;
@@ -140,7 +140,7 @@ abstract class BaseTimeline implements Timeline {
 					console.log(trends);
 					try {
 						const trendsArray: any[] = trends[0].trends;
-						resolve(trendsArray.map((value, index, array) => { return value.name; }));
+						resolve(trendsArray.map((value, index, array) => { const volume = value.tweet_volume ? ' ' + value.tweet_volume + ' ' + '\u2605'.repeat(Math.log(value.tweet_volume)) : ' new'; return {label: value.name, description: volume, query: value.query }; }));
 					} catch (ex) {
 						resolve('');
 					}

@@ -139,7 +139,7 @@ export default class Controller implements vscode.Disposable {
         TimelineFactory.getTimeline(TimelineType.Home).getTrends().then(trend => {
             vscode.window.showQuickPick(trend, { matchOnDescription: true, placeHolder: 'Select a Trend' }).then(value => {
                 if (value) {
-                    self.openSearchTimeline(value);
+                    self.openSearchTimeline(value.query);
                 }
             });
         }, error => {
@@ -253,8 +253,8 @@ export default class Controller implements vscode.Disposable {
                 } else {
                     res.send('');
                     if (select == 'Comment') {
-                        const url = decodeURIComponent(req.params.url);
-                        const brief = decodeURIComponent(req.params.brief);
+                        const url = querystring.unescape(req.params.url);
+                        const brief = querystring.unescape(req.params.brief);
                         self.view.showCommentInputBox(brief + '...').then(content => {
                             if (content) {
                                 TimelineFactory.getTimeline(TimelineType.Home).post(content + ' ' + url).then(content => {
