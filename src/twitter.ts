@@ -102,7 +102,10 @@ export class TimelineFactory {
 export interface Timeline {
 	getNew(): Thenable<string>;
 	post(status: string): Thenable<string>;
+    reply(content: string, id: string): Thenable<string>;
 	getTrends(): Thenable<string[]>;
+    like(id: string, unlike: boolean): Thenable<string>;
+    retweet(id: string): Thenable<string>;
 	filename: string;
 }
 
@@ -194,10 +197,14 @@ abstract class BaseTimeline implements Timeline {
 		});
 	}
 
-	post(status: string): Thenable<string> {
+	post(status: string, inReplyToId: string = null): Thenable<string> {
 		const self = this;
+        var payload: any = {status: status};
+        if (inReplyToId != null) {
+            payload.in_reply_to_status_id = inReplyToId;
+        }
 		return new Promise((resolve, reject) => {
-			self.client.post('statuses/update', { status: status }, function(error, data, response) {
+			self.client.post('statuses/update', payload, function(error, data, response) {
 				if (!error) {
 					console.log(data);
 					resolve('OK');
@@ -209,6 +216,43 @@ abstract class BaseTimeline implements Timeline {
 			});
 		});
 	}
+    
+    reply(content: string, id: string): Thenable<string> {
+        return this.post(content, id);
+    }
+    
+    like(id: string, unlike: boolean): Thenable<string> {
+        const self = this;
+        const action = (unlike ? 'destroy' : 'create');
+        return new Promise((resolve, reject) => {
+            self.client.post('favorites/' + action, {id: id, include_entities: false}, function(error, tweet, response){
+                if (!error) {
+                    const t = Tweet.fromJson(tweet);
+                    resolve(t.formatLike());
+                } else {
+                    console.error(error);
+					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					reject(msg);
+                }
+            });
+        });
+    }
+    
+    retweet(id: string): Thenable<string> {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            self.client.post('statuses/retweet', {id: id}, function(error, tweet, response){
+                if (!error) {
+                    const t = Tweet.fromJson(tweet);
+                    resolve(t.formatRetweet());
+                } else {
+                    console.error(error);
+					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					reject(msg);
+                }
+            });
+        });
+    }
 
 	protected static _instance: Timeline;
 	protected static createInstance(): Timeline {

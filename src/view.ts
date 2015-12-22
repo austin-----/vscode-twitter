@@ -15,8 +15,23 @@ export default class View implements vscode.Disposable {
 	
 	showPostInputBox(): Thenable<string> {
 		return vscode.window.showInputBox({
-			placeHolder: 'What\'s happening?',
+			placeHolder: 'What\'s happening?  (tip: use \'D username message\' for direct message)',
 			prompt: 'Post your status to Twitter. '
+		});
+	}
+    
+    showReplyInputBox(user: string): Thenable<string> {
+		return vscode.window.showInputBox({
+			placeHolder: 'Reply to @' + user,
+			prompt: 'Post your reply to @' + user,
+            value: '@' + user + ' '
+		});
+	}
+    
+    showCommentInputBox(brief: string): Thenable<string> {
+		return vscode.window.showInputBox({
+			placeHolder: 'Put your comments here',
+			prompt: 'Comment on ' + brief
 		});
 	}
 	
