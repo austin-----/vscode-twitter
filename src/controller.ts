@@ -139,7 +139,7 @@ export default class Controller implements vscode.Disposable {
         TimelineFactory.getTimeline(TimelineType.Home).getTrends().then(trend => {
             vscode.window.showQuickPick(trend, { matchOnDescription: true, placeHolder: 'Select a Trend' }).then(value => {
                 if (value) {
-                    self.openSearchTimeline(value.query);
+                    self.openSearchTimeline(decodeURIComponent(value.query));
                 }
             });
         }, error => {
