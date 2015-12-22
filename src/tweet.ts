@@ -100,7 +100,7 @@ export default class Tweet {
     }
     
     retweetLink(): string {
-        return (this.retweeted ? '' : Tweet.retweetPrefix + this.id + '/' + encodeURIComponent(this.tweetLink()));
+        return (this.retweeted ? '' : Tweet.retweetPrefix + this.id + '/' + encodeURIComponent(this.tweetLink()) + '/' + encodeURIComponent('@' + this.userScreenName + ': ' + this.text.slice(0, 10)));
     }
     
     replyLink(): string {

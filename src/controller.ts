@@ -241,7 +241,7 @@ export default class Controller implements vscode.Disposable {
             res.send('');
             self.twitterReplyInternal(req.params.id, req.params.user);
         });
-        this.app.get('/retweet/:id/:url', function(req, res) {
+        this.app.get('/retweet/:id/:url/:brief', function(req, res) {
             vscode.window.showInformationMessage('Would you like to Retweet or Comment?', 'Comment', 'Retweet').then(select => {
                 if (select == 'Retweet') {
                     TimelineFactory.getTimeline(TimelineType.Home).retweet(req.params.id).then(content => {
@@ -254,12 +254,15 @@ export default class Controller implements vscode.Disposable {
                     res.send('');
                     if (select == 'Comment') {
                         const url = decodeURIComponent(req.params.url);
-                        self.view.showCommentInputBox(url).then(content => {
-                            TimelineFactory.getTimeline(TimelineType.Home).post(content + ' ' + url).then(content => {
-                                vscode.window.showInformationMessage('Your comment was posted.');
-                            }, (error: string) => {
-                                vscode.window.showErrorMessage('Failed to retweet: ' + error);
-                            });
+                        const brief = decodeURIComponent(req.params.brief);
+                        self.view.showCommentInputBox(brief + '...').then(content => {
+                            if (content) {
+                                TimelineFactory.getTimeline(TimelineType.Home).post(content + ' ' + url).then(content => {
+                                    vscode.window.showInformationMessage('Your comment was posted.');
+                                }, (error: string) => {
+                                    vscode.window.showErrorMessage('Failed to post comment: ' + error);
+                                });
+                            }
                         });
                     }
                 }
