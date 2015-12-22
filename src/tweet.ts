@@ -37,7 +37,7 @@ export default class Tweet {
     static spaceSeparator: string = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
     static retweetSymbol: string = '\u267A';
     static greenretweetSymbol: string = '<font color="green">\u267A</font>';
-    static refreshSymbol: string = '\u27F3';
+    static refreshSymbol: string = '\u21BB';
     static heartSymbol: string = '\u2661';
     static redHeartSymbol: string = '<font color="red">\u2661</font>';
     static replySymbol: string = 'Reply';
