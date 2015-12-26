@@ -36,12 +36,15 @@ export default class Controller implements vscode.Disposable {
             console.log('editor changed: ' + editor.document.fileName);
             if (TimelineFactory.isTwitterBuffer(editor.document)) {
                 console.log('it is a twitter buffer file');
-                Document.fixDocument(editor.document.fileName, () => {
-                    console.log('toggle preview');
-                    // a hack to force the preview window to refresh its content
-                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-                    vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                console.log('toggle preview');
+                vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                Document.fixDocument(editor.document.fileName, (fixed) => {
+                    if (fixed) {
+                        // a hack to force the preview window to refresh its content
+                        console.log('fixed document, toggle preview again');
+                        vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                        vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
+                    }
                 });
             }
         }

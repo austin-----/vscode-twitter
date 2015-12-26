@@ -34,19 +34,26 @@ export class Document {
         });
     }
 
-    static fixDocument(filename: string, callback: () => void) {
+    static fixDocument(filename: string, callback: (boolean) => void) {
         fs.readFile(filename, (err, data) => {
             if (err == null) {
-                const fixed = Tweet.fixServicePort(data.toString('utf8'));
-                fs.writeFile(filename, fixed, err => {
-                    if (err == null) {
-                        vscode.workspace.openTextDocument(filename).then(doc => {
-                            callback();
-                        });
-                    } else {
-                        console.error(JSON.stringify(err));
-                    }
-                });
+                const content = data.toString('utf8');
+                const fixed = Tweet.fixServicePort(content);
+                if (fixed != content) {
+                    fs.writeFile(filename, fixed, err => {
+                        if (err == null) {
+                            vscode.workspace.openTextDocument(filename).then(doc => {
+                                callback(true);
+                            });
+                        } else {
+                            console.error(JSON.stringify(err));
+                        }
+                    });
+                } else {
+                    vscode.workspace.openTextDocument(filename).then(doc => {
+                        callback(false);
+                    });
+                }
             } else {
                 console.error(JSON.stringify(err));
             }
