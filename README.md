@@ -65,6 +65,6 @@ You can use the following commands:
 
 ## For more information
 * [Repo](https://github.com/austin-----/vscode-twitter)
-* [VS Code Marketplace](https://marketplace.visualstudio.com/items/austin.a-vscode-twitter)
+* [VS Code Marketplace](https://marketplace.visualstudio.com/items/austin.vscode-twitter)
 
 **Enjoy!**
