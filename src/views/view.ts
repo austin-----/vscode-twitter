@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import Controller from './controller';
-import {TimelineType} from './twitter';
+import Controller from '../controllers/controller';
+import {TimelineType} from '../models/timeline';
 
 export default class View implements vscode.Disposable {
 	private statusBarItemMain: vscode.StatusBarItem;

@@ -1,4 +1,3 @@
-var moment = require('moment');
 import * as punycode from 'punycode';
 import * as vscode from 'vscode';
 import * as querystring from 'querystring';
@@ -30,8 +29,8 @@ export default class Tweet {
     likeCount: number;
     liked: boolean;
 
-    static lineFeed: string = '\r\n\r\n';
-    static endLine: string = '_____' + Tweet.lineFeed;
+    static lineFeed: string = '<br/><br/>';
+    static endLine: string = '<hr/>';
     static quote: string = '>';
     static dotSeparator: string = ' \u2022 ';
     static spaceSeparator: string = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
@@ -83,8 +82,8 @@ export default class Tweet {
         return Tweet.serviceUrl + (this.liked ? 'unlike/' : 'like/');
     }
 
-    static createReload(signature: string): string {
-        return Tweet.createLink(Tweet.refreshSymbol, Tweet.serviceUrl + 'refresh/' + querystring.escape(signature));
+    static reloadLink(): string {
+        return Tweet.serviceUrl + 'refresh/';
     }
 
     tweetLink(): string {
@@ -107,96 +106,7 @@ export default class Tweet {
         return Tweet.replyPrefix + this.id + '/' + this.userScreenName;
     }
 
-    toMarkdown(level: number = 0): string {
-        const quote = Tweet.quote.repeat(level);
-
-        if (this.retweeted_status) {
-            return this.formatUser(-1) + ' ' + 'Retweeted' + Tweet.lineFeed + this.retweeted_status.toMarkdown(level);
-        }
-
-        var result = quote + this.formatUser(level) + Tweet.lineFeed +
-            quote + this.normalizeText(quote) + Tweet.lineFeed;
-        if (this.quoted) {
-            result += this.quoted.toMarkdown(level + 1);
-        }
-
-        if (this.media) {
-            const size = (level == 0) ? ':small' : ':thumb';
-            var mediaStr = this.media.map<string>((value, index, array): string => {
-                var mediaStr = '';
-                if (value.type == 'video' || value.type == 'animated_gif') {
-                    const control = ((value.type == 'animated_gif') ? Tweet.autoplayControl : Tweet.videoControl);
-                    const variants: any[] = value.video_info.variants;
-                    if (variants.length != 0) {
-                        mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
-                        variants.forEach((video, index, array) => {
-                            mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
-                        });
-                        mediaStr += '</video>';
-                        return mediaStr;
-                    }
-                }
-                // not video, use image
-                //return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
-                return Tweet.createLink('![](' + value.media_url_https + size + ')', Tweet.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
-            }).join(' ');
-            if (mediaStr != '') {
-                result += quote + mediaStr + Tweet.lineFeed;
-            }
-        }
-        if (level == 0) result += this.formatStatusLine() + Tweet.endLine;
-        return result;
-    }
-
-    formatStatusLine(): string {
-        var result = Tweet.createLink(Tweet.replySymbol, this.replyLink());
-        result += Tweet.spaceSeparator + this.formatRetweet();
-        result += Tweet.spaceSeparator + this.formatLike();
-        return result + Tweet.lineFeed;
-    }
-    
-    formatRetweet(): string {
-        var text = Tweet.retweetSymbol + (this.retweetCount == 0 ? '' : ' ' + this.retweetCount + ' ');
-        if (this.retweeted) {
-            text = '<font color="green">' + text + '</font>';
-        }
-        return (this.retweeted ? text : Tweet.createLink(text, this.retweetLink(), true));
-    }
-
-    formatLike(): string {
-        var text = Tweet.heartSymbol + (this.likeCount == 0 ? '' : ' ' + this.likeCount + ' ');
-        if (this.liked) {
-            text = '<font color="red">' + text + '</font>';
-        }
-        return Tweet.createLink(text, this.likeLink(), true);
-    }
-
-    formatUser(level: number): string {
-        var result = ''
-        if (level == 0) {
-            result += '![](' + this.userImage + ') ';
-        }
-        if (level == -1) {
-            result += Tweet.retweetSymbol + ' ' + Tweet.createLink(this.userName, this.userLink());
-        } else {
-            result += Tweet.bold(this.userName) + ' ' + Tweet.createLink(Tweet.normalizeUnderscore('@' + this.userScreenName), this.userLink());
-        }
-
-        if (level == 0) {
-            result += Tweet.dotSeparator + moment(this.created.replace(/( +)/, ' UTC$1')).fromNow();
-        }
-        if (level != -1) {
-            result += ' ([Detail](' + this.tweetLink() + ')) ';
-        }
-        return result;
-    }
-
-    static createLink(text: string, url: string, replace: boolean = false): string {
-        const replaceCallback = 'var self=this;xhttp.onreadystatechange=function(){if(xhttp.readyState==4){console.log(\'done\');if(xhttp.responseText!=\'\'){self.outerHTML=xhttp.responseText;}}};';
-        return '<a onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (replace ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
-    }
-
-    normalizeText(quote: string): string {
+    normalizeText(handler: (text:string, url: string) => string, handler2: (text:string, url: string) => string): string {
         var normalized: number[] = <any>punycode.ucs2.decode(this.text);
 
         var indexArray: any[] = [];
@@ -227,16 +137,16 @@ export default class Tweet {
             var token = punycode.ucs2.encode(normalized.slice(value.i0, value.i1));
             switch (value.type) {
                 case EntityType.UserMention:
-                    token = Tweet.createLink(Tweet.normalizeUnderscore(token), Tweet.userLinkPrefix + value.tag.screen_name);
+                    token = handler(Tweet.normalizeUnderscore(token), Tweet.userLinkPrefix + value.tag.screen_name);
                     break;
                 case EntityType.HashTag:
-                    token = Tweet.createLink(Tweet.normalizeUnderscore(token), Tweet.hashTagLinkPrefix + value.tag.text);
+                    token = handler(Tweet.normalizeUnderscore(token), Tweet.hashTagLinkPrefix + value.tag.text);
                     break;
                 case EntityType.Symbol:
-                    token = Tweet.createLink(token, Tweet.searchPrefix + '$' + value.tag.text);
+                    token = handler(token, Tweet.searchPrefix + '$' + value.tag.text);
                     break;
                 case EntityType.Url:
-                    token = '[' + token + '](' + value.tag.url + ')';
+                    token = handler2(token, value.tag.url);
                     break;
             }
             processed += token;
@@ -247,7 +157,7 @@ export default class Tweet {
         var result = processed;
         result = result.replace(/_/g, Tweet.underscoreAlter);
         result = result.replace(/^RT /, Tweet.bold('RT') + ' ');
-        result = result.replace(/\n/g, '\n' + quote)
+        result = result.replace(/\n/g, '<br/>')
         return result;
     }
 
@@ -270,11 +180,11 @@ export default class Tweet {
     }
 
     static bold(text: string): string {
-        return '**' + text + '**';
+        return '<strong>' + text + '</strong>';
     }
 
     static head1(text: string): string {
-        return '#' + text + '\r\n\r\n';
+        return '<h1>' + text + '</h1>';
     }
 
     static fromJson(json: any): Tweet {
