@@ -73,7 +73,7 @@ export default class HTMLFormatter {
     }
     
     private static createRefreshLink(type: TimelineType, query: string): string {
-        return this.createUpdatableLink(Tweet.refreshSymbol, Tweet.reloadLink() + type + (query == null ? '/null' : '/' + query));
+        return this.createUpdatableLink(Tweet.refreshSymbol, Tweet.reloadLink() + type + (query == null ? '' : '/' + query));
     }
     
     private static createUpdatableLink(text: string, url: string, update: boolean = false): string {

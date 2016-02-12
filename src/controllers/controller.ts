@@ -231,6 +231,11 @@ export default class MainController implements vscode.Disposable {
             self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type), req.params.query));
             self.openTimelineOfType(parseInt(req.params.type), req.params.query);
         });
+        this.app.get('/refresh/:type', function(req, res) {
+            res.send('Refreshing');
+            self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type)));
+            self.openTimelineOfType(parseInt(req.params.type));
+        });
         this.app.get('/reply/:id/:user', function(req, res) {
             res.send('');
             self.twitterReplyInternal(req.params.id, req.params.user);
