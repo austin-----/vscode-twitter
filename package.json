@@ -65,6 +65,16 @@
           "type": "string",
           "default": "",
           "description": "Specify the access token secret of your twitter app"
+        },
+        "twitter.nomedia": {
+          "type": "boolean",
+          "default": false,
+          "description": "Specify whether to display media (image and video) in the timeline"
+        },
+        "twitter.autoplay": {
+          "type": "boolean",
+          "default": true,
+          "description": "Specify whether to auto play gifs in the timeline"
         }
       }
     }
