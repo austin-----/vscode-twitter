@@ -39,7 +39,6 @@ export default class MainController implements vscode.Disposable {
         if (vscode.window.activeTextEditor) {
             viewColumn = (viewColumn) % 3 + 1;
         }
-        self.contentProvider.update(uri);
         vscode.window.setStatusBarMessage(message,
             vscode.commands.executeCommand('vscode.previewHtml', uri, viewColumn).then((success) => { },
                 (reason) => {
