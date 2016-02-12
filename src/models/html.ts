@@ -26,13 +26,18 @@ export default class HTMLFormatter {
     }
     
     private static formatTweet(tweet: Tweet, level: number = 0): string {
-	    var quoteBegin = '<blockquote>'.repeat(level);
+        var configuration = vscode.workspace.getConfiguration('twitter');
+        var simpleMode = configuration.get('simpleMode') || false;
+        var autoPlay = configuration.get('autoPlay') || false;
+        var autoplayControl = autoPlay ? Tweet.autoplayControl : ' ';
+        var _this = this;
+        var quoteBegin = '<blockquote>'.repeat(level);
         var quoteEnd = '</blockquote>'.repeat(level); 
         if (tweet.retweeted_status) {
-            return '<p>' + this.formatUser(tweet, -1) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, level) + '</p>';
+            return '<p>' + this.formatUser(tweet, -1, simpleMode) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, level) + '</p>';
         }
 
-        var result = quoteBegin + '<p>' + this.formatUser(tweet, level) + '</p><p>' +
+        var result = quoteBegin + '<p>' + this.formatUser(tweet, level, simpleMode) + '</p><p>' +
             tweet.normalizeText(this.createUpdatableLink, this.createLink) + '</p>';
 
         if (tweet.quoted) {
@@ -44,7 +49,10 @@ export default class HTMLFormatter {
             var mediaStr = tweet.media.map<string>((value, index, array): string => {
                 var mediaStr = '';
                 if (value.type == 'video' || value.type == 'animated_gif') {
-                    const control = ((value.type == 'animated_gif') ? Tweet.autoplayControl : Tweet.videoControl);
+                    if(simpleMode){
+                        return '[video](' + _this.tweetLink() + ')';
+                    }
+                    const control = ((value.type == 'animated_gif') ? autoplayControl : Tweet.videoControl);
                     const variants: any[] = value.video_info.variants;
                     if (variants.length != 0) {
                         mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
@@ -57,7 +65,7 @@ export default class HTMLFormatter {
                 }
                 // not video, use image
                 //return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
-                return this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', Tweet.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
+                return this.createUpdatableLink(simpleMode ? 'image' : '<img src="' + value.media_url_https + size + '"/>', Tweet.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
             }).join(' ');
             if (mediaStr != '') {
                 result += '<p>' + mediaStr + '</p>';
@@ -81,9 +89,9 @@ export default class HTMLFormatter {
         return '<a onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
     }
     
-    private static formatUser(tweet: Tweet, level: number): string {
+    private static formatUser(tweet: Tweet, level: number, simpleMode: boolean): string {
         var result = ''
-        if (level == 0) {
+        if (!simpleMode && level == 0) {
             result += '<img src="' + tweet.userImage + '"/>&nbsp;';
         }
         if (level == -1) {
