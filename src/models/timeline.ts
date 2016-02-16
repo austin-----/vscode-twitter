@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import Tweet from '../models/tweet';
+import User from '../models/user';
 import TwitterClient from '../twitter';
 import HTMLFormatter from './html';
+import {UserFormatPosition} from './html';
 
 export enum TimelineType {
-	Home = 1,
-	User,
-	Mentions,
+    Home = 1,
+    User,
+    Mentions,
     OtherUser,
     Search,
     Post,
@@ -15,8 +17,8 @@ export enum TimelineType {
 }
 
 export interface Timeline {
-    getTweets() : Thenable<string>;
-    getHTML() : Thenable<string>;
+    getTweets(): Thenable<string>;
+    getHTML(): Thenable<string>;
 }
 
 export class TimelineFactory {
@@ -48,158 +50,192 @@ export class TimelineFactory {
 }
 
 abstract class BaseTimeline implements Timeline {
-	refreshInProgress: boolean = false;
-	type: TimelineType;
+    refreshInProgress: boolean = false;
+    type: TimelineType;
     query: string;
 
-	since_id: string;
-	tweets: Tweet[];
+    since_id: string;
+    tweets: Tweet[];
 
-	params: any = { count: 100 };
-	endpoint: string = '';
+    params: any = { count: 100 };
+    endpoint: string = '';
 
-	title: string;
+    title: string;
 
-	getTweets(): Thenable<string> {
-		const self = this;
-		var params: any = this.params;
-		if (this.since_id) {
-			params.since_id = this.since_id;
-		}
-		return new Promise((resolve, reject) => {
-			TwitterClient.get(self.endpoint, params).then((tweets: any) => {
+    getTweets(): Thenable<string> {
+        const self = this;
+        var params: any = this.params;
+        if (this.since_id) {
+            params.since_id = this.since_id;
+        }
+        return new Promise((resolve, reject) => {
+            TwitterClient.get(self.endpoint, params).then((tweets: any) => {
                 if (!(tweets instanceof Array)) {
-						tweets = tweets.statuses;
-					};
-					// older tweets go first
-					tweets.reverse().forEach((value, index, array) => {
-						self.since_id = value.id_str;
-						// don't cache more than 1000 tweets
-						if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
-							self.tweets.pop();
-						}
-					});
-					var result = HTMLFormatter.formatTweets(self.tweets);
-					resolve(result);
+                    tweets = tweets.statuses;
+                };
+                // older tweets go first
+                tweets.reverse().forEach((value, index, array) => {
+                    self.since_id = value.id_str;
+                    // don't cache more than 1000 tweets
+                    if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
+                        self.tweets.pop();
+                    }
+                });
+                var result = HTMLFormatter.formatTweets(self.tweets);
+                resolve(result);
             }, (error) => {
                 reject(error);
             });
-		});
-	}
-    
-    getHTML() : Thenable<string> {
-        return new Promise((resolve, reject) => {
-            this.getTweets().then((value) => {
-                var result = HTMLFormatter.formatTimeline(this.title, this.type, this.query, value);
-                resolve(result);
-            }, (error) => {reject(error);});
         });
     }
 
-	protected static _instance: Timeline;
-	protected static createInstance(): Timeline {
-		throw new Error('Shouldn\'t be called');
-	}
+    getHTML(): Thenable<string> {
+        return new Promise((resolve, reject) => {
+            const self = this;
+            this.getTweets().then((value) => {
+                var result = HTMLFormatter.formatTimeline(self.title, self.type, self.query, '', value);
+                resolve(result);
+            }, (error) => { reject(error); });
+        });
+    }
 
-	static getSharedInstance(): Timeline {
-		if (!this._instance) {
-			this._instance = this.createInstance();
-		}
-		return this._instance;
-	}
+    protected static _instance: Timeline;
+    protected static createInstance(): Timeline {
+        throw new Error('Shouldn\'t be called');
+    }
 
-	constructor() {
-		this.tweets = new Array<Tweet>();
-	}
+    static getSharedInstance(): Timeline {
+        if (!this._instance) {
+            this._instance = this.createInstance();
+        }
+        return this._instance;
+    }
+
+    constructor() {
+        this.tweets = new Array<Tweet>();
+    }
 }
 
 class HomeTimeline extends BaseTimeline {
-	constructor() {
-		super();
-		this.type = TimelineType.Home;
-		this.endpoint = 'statuses/home_timeline';
-		this.title = 'Home Timeline';
-	}
+    constructor() {
+        super();
+        this.type = TimelineType.Home;
+        this.endpoint = 'statuses/home_timeline';
+        this.title = 'Home Timeline';
+    }
 
-	protected static createInstance(): Timeline {
-		return new HomeTimeline();
-	}
+    protected static createInstance(): Timeline {
+        return new HomeTimeline();
+    }
 }
 
 class MentionsTimeline extends BaseTimeline {
-	constructor() {
-		super();
-		this.type = TimelineType.Mentions;
-		this.endpoint = 'statuses/mentions_timeline';
-		this.title = 'Mentions Timeline';
-	}
-	
-	protected static createInstance(): Timeline {
-		return new MentionsTimeline();
-	}
+    constructor() {
+        super();
+        this.type = TimelineType.Mentions;
+        this.endpoint = 'statuses/mentions_timeline';
+        this.title = 'Mentions Timeline';
+    }
+
+    protected static createInstance(): Timeline {
+        return new MentionsTimeline();
+    }
 }
 
 class UserTimeline extends BaseTimeline {
-	constructor() {
-		super();
-		this.type = TimelineType.User;
-		this.endpoint = 'statuses/user_timeline';
-		this.title = 'User Timeline';
-	}
+    profileEndPoint = 'account/verify_credentials';
+    
+    constructor() {
+        super();
+        this.type = TimelineType.User;
+        this.endpoint = 'statuses/user_timeline';
+        this.title = 'User Timeline';
+    }
 
-	protected static createInstance(): Timeline {
-		return new UserTimeline();
-	}
+    protected static createInstance(): Timeline {
+        return new UserTimeline();
+    }
+    
+    getHTML(): Thenable<string> {
+        return new Promise((resolve, reject) => {
+            const self = this;
+            this.getTweets().then((value) => {
+                TwitterClient.get(self.profileEndPoint, { include_entities: true }).then((user) => {
+                    var userProfile = User.fromJson(user);
+                    var description = HTMLFormatter.formatUser(userProfile, UserFormatPosition.Profile);
+                    var result = HTMLFormatter.formatTimeline(self.title, self.type, self.query, description, value);
+                    resolve(result);
+                }, (error) => { reject(error); });
+            }, (error) => { reject(error); });
+        });
+    }
 }
 
 class OtherUserTimeline extends BaseTimeline {
-	constructor(screenName: string) {
-		super();
-		this.type = TimelineType.OtherUser;
-		this.endpoint = 'statuses/user_timeline';
-		this.title = 'User: @' + screenName.replace(/_/g, Tweet.underscoreAlter);
+
+    profileEndPoint = 'users/show';
+
+    constructor(screenName: string) {
+        super();
+        this.type = TimelineType.OtherUser;
+        this.endpoint = 'statuses/user_timeline';
+        this.title = 'User: @' + screenName;
         this.query = screenName;
-		this.params.screen_name = screenName;
-	}
+        this.params.screen_name = screenName;
+    }
+
+    getHTML(): Thenable<string> {
+        return new Promise((resolve, reject) => {
+            const self = this;
+            this.getTweets().then((value) => {
+                TwitterClient.get(self.profileEndPoint, { screen_name: self.query, include_entities: true }).then((user) => {
+                    var userProfile = User.fromJson(user);
+                    var description = HTMLFormatter.formatUser(userProfile, UserFormatPosition.Profile);
+                    var result = HTMLFormatter.formatTimeline(self.title, self.type, self.query, description, value);
+                    resolve(result);
+                }, (error) => { reject(error); });
+            }, (error) => { reject(error); });
+        });
+    }
 }
 
 class SearchTimeline extends BaseTimeline {
 
-	searchEndPoint = 'search/tweets';
-	keyword: string;
+    searchEndPoint = 'search/tweets';
+    keyword: string;
 
-	constructor(keyword: string) {
-		super();
-		this.type = TimelineType.Search;
-		this.endpoint = 'statuses/lookup';
-		this.title = 'Search results: ' + keyword.replace(/_/g, Tweet.underscoreAlter);
+    constructor(keyword: string) {
+        super();
+        this.type = TimelineType.Search;
+        this.endpoint = 'statuses/lookup';
+        this.title = 'Search results: ' + keyword;
         this.query = keyword;
-		this.keyword = keyword;
-	}
-	
-	parentGetNew(): Thenable<string> {
-		return super.getTweets();
-	}
-	
-	getTweets(): Thenable<string> {
-		const self = this;
-		this.params.q = this.keyword;
-		this.params.include_entities = false;
-		return new Promise((resolve, reject) => {
-			TwitterClient.get(self.searchEndPoint, self.params).then((tweets:any) => {
+        this.keyword = keyword;
+    }
+
+    parentGetNew(): Thenable<string> {
+        return super.getTweets();
+    }
+
+    getTweets(): Thenable<string> {
+        const self = this;
+        this.params.q = this.keyword;
+        this.params.include_entities = false;
+        return new Promise((resolve, reject) => {
+            TwitterClient.get(self.searchEndPoint, self.params).then((tweets: any) => {
                 if (!(tweets instanceof Array)) {
-						tweets = tweets.statuses;
-					};
-					self.params.id = (<any[]>tweets).map<string>((value, index, array):string => { return value.id_str; }).join(',');
-					self.params.include_entities = true;
-					self.parentGetNew().then(value => {
-						resolve(value);
-					}, error => {
-						reject(error);
-					});
+                    tweets = tweets.statuses;
+                };
+                self.params.id = (<any[]>tweets).map<string>((value, index, array): string => { return value.id_str; }).join(',');
+                self.params.include_entities = true;
+                self.parentGetNew().then(value => {
+                    resolve(value);
+                }, error => {
+                    reject(error);
+                });
             }, (error) => {
                 reject(error);
             });
-		});
-	}
+        });
+    }
 }

@@ -10,6 +10,7 @@ export default class TwitterTimelineContentProvider implements vscode.TextDocume
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
 
     provideTextDocumentContent(uri: vscode.Uri): Thenable<string> {
+        console.log('Ask for content: ' + uri.toString());
         var index = this.segments.findIndex((value) => (uri.authority + uri.path).startsWith(value));
         if (index != null) {
             var type = this.types[index];

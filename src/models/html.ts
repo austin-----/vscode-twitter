@@ -1,15 +1,139 @@
 import Tweet from './tweet';
+import User from './user';
+import Entity from './entity';
 import {TimelineType} from './timeline';
+import {LocalService, LocalServiceEndpoint} from '../controllers/service';
 import * as vscode from 'vscode';
+import * as querystring from 'querystring';
 
 var moment = require('moment');
 
+export enum UserFormatPosition {
+    Retweet = 1,
+    Tweet,
+    Quoted,
+    Profile
+}
+
 export default class HTMLFormatter {
-    static formatTimeline(title: string, type: TimelineType, query: string, tweets: string): string {
+
+    static endLine: string = '<hr/>';
+    static dotSeparator: string = ' \u2022 ';
+    static spaceSeparator: string = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    static barSeparator: string = '&nbsp;&nbsp;|&nbsp;&nbsp;';
+    static retweetSymbol: string = '\u267A';
+    static refreshSymbol: string = '\u21BB';
+    static heartSymbol: string = '\u2661';
+    static replySymbol: string = 'Reply';
+    static autoplayControl = ' autoplay loop ';
+    static videoControl = ' muted controls preload="none" ';
+
+    private static get noMedia(): boolean {
+        var configuration = vscode.workspace.getConfiguration('twitter');
+        return configuration.get('nomedia', false);
+    }
+
+    private static get autoPlay(): boolean {
+        var configuration = vscode.workspace.getConfiguration('twitter');
+        return configuration.get('autoPlay', true);
+    }
+
+    static service: LocalService;
+
+    static get serviceUrl(): string {
+        return 'http://localhost:' + this.service.servicePort + '/';
+    }
+
+    static get userLinkPrefix(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.User) + '/';
+    }
+
+    static get hashTagLinkPrefix(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Search) + '/%23';
+    }
+
+    static get searchPrefix(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Search) + '/';
+    }
+
+    static get imagePrefix(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Image) + '/';
+    }
+
+    static get retweetPrefix(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Retweet) + '/';
+    }
+
+    static get replyPrefix(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Reply) + '/';
+    }
+
+    static likePrefix(liked: boolean): string {
+        return this.serviceUrl + (liked ? this.service.getSegment(LocalServiceEndpoint.Unlike) + '/' : this.service.getSegment(LocalServiceEndpoint.Like) + '/');
+    }
+    
+    static followPrefix(followed: boolean): string {
+        return this.serviceUrl + (followed? this.service.getSegment(LocalServiceEndpoint.Unfollow) + '/' : this.service.getSegment(LocalServiceEndpoint.Follow) + '/');
+    }
+
+    static get reloadLink(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Refresh);
+    }
+
+    static tweetLink(tweet: Tweet): string {
+        return 'https://twitter.com/' + tweet.user.screenName + '/status/' + tweet.id;
+    }
+    
+    static userDetailLink(screenName: string): string {
+        return 'https://twitter.com/' + screenName;
+    }
+
+    static userLink(screenName: string): string {
+        return this.userLinkPrefix + screenName;
+    }
+
+    static likeLink(tweet: Tweet): string {
+        return this.likePrefix(tweet.liked) + tweet.id;
+    }
+
+    static retweetLink(tweet: Tweet): string {
+        return (tweet.retweeted ? '' : this.retweetPrefix + tweet.id + '/' + querystring.escape(this.tweetLink(tweet)) + '/' + querystring.escape('@' + tweet.user.screenName + ': ' + tweet.text.slice(0, 10)));
+    }
+
+    static replyLink(tweet: Tweet): string {
+        return this.replyPrefix + tweet.id + '/' + tweet.user.screenName;
+    }
+    
+    static followLink(followed: boolean, screenName: string): string {
+        return this.followPrefix(followed) + screenName;
+    }
+
+    private static createLink(text: string, url: string): string {
+        return '<a target="_blank" href="' + url + '">' + text + '</a>';
+    }
+
+    private static createRefreshLink(type: TimelineType, query: string): string {
+        return this.createUpdatableLink(this.refreshSymbol, this.reloadLink + type + (query == null ? '' : '/' + query));
+    }
+
+    private static createUpdatableLink(text: string, url: string, update: boolean = false): string {
+        const replaceCallback = 'var self=this;xhttp.onreadystatechange=function(){if(xhttp.readyState==4){console.log(\'done\');if(xhttp.responseText!=\'\'){self.outerHTML=xhttp.responseText;}}};';
+        return '<a onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
+    }
+
+    private static bold(text: string): string {
+        return '<strong>' + text + '</strong>';
+    }
+
+    private static head1(text: string): string {
+        return '<h1>' + text + '</h1>';
+    }
+
+    static formatTimeline(title: string, type: TimelineType, query: string, description: string, tweets: string): string {
         var result = '<head><link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/0.10.8/src/vs/languages/markdown/common/markdown.css" type="text/css" media="screen">';
         result += '<link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/0.10.8/src/vs/languages/markdown/common/tokens.css" type="text/css" media="screen">';
-        result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;}</style></head>';
-        result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '</h1>' + '<div id="tweets">' + tweets + '</div></body>';
+        result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
+        result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '</h1>' + '<p>' + description + '</p><div id="tweets">' + tweets + '</div></body>';
         const videos = result.match(/<\/video>/gi);
         var videoCount = 0;
         if (videos) {
@@ -17,129 +141,132 @@ export default class HTMLFormatter {
         }
         if (videoCount > 10) {
             console.log('Too many videos (' + videoCount + '), disabling auto play');
-            result = result.replace(new RegExp(Tweet.autoplayControl + '>', 'g'), Tweet.videoControl + ' loop >');
+            result = result.replace(new RegExp(this.autoplayControl + '>', 'g'), this.videoControl + ' loop >');
         }
         return result;
     }
-    
+
     static formatTweets(tweets: Tweet[]): string {
         return tweets.map<string>((t) => { return this.formatTweet(t); }).join('');
     }
-    
-    private static get noMedia(): boolean {
-        var configuration = vscode.workspace.getConfiguration('twitter');
-        return configuration.get('nomedia', false);
-    }
-    
-    private static get autoPlay(): boolean {
-        var configuration = vscode.workspace.getConfiguration('twitter');
-        return configuration.get('autoPlay', true);
-    }
-    
+
     private static formatTweet(tweet: Tweet, level: number = 0): string {
-        
-        var autoplayControl = this.autoPlay ? Tweet.autoplayControl : ' ';
+
+        var autoplayControl = this.autoPlay ? this.autoplayControl : ' ';
         var quoteBegin = '<blockquote>'.repeat(level);
-        var quoteEnd = '</blockquote>'.repeat(level); 
+        var quoteEnd = '</blockquote>'.repeat(level);
         if (tweet.retweeted_status) {
-            return '<p>' + this.formatUser(tweet, -1) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, level) + '</p>';
+            return '<p>' + this.formatUser(tweet.user, UserFormatPosition.Retweet) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, level) + '</p>';
         }
 
-        var result = quoteBegin + '<p>' + this.formatUser(tweet, level) + '</p><p>' +
-            tweet.normalizeText(this.createUpdatableLink, this.createLink) + '</p>';
+        var result = quoteBegin + '<p>' + this.formatUser(tweet.user, level == 0 ? UserFormatPosition.Tweet : UserFormatPosition.Quoted);
+        if (level == 0) {
+            result += this.dotSeparator + moment(tweet.created.replace(/( +)/, ' UTC$1')).fromNow();
+        }
+        if (level != -1) {
+            result += '&nbsp;(' + this.createLink('Detail', this.tweetLink(tweet)) + ')';
+        }
+        result += '</p><p>' + this.processText(tweet.entity, tweet.text) + '</p>';
 
         if (tweet.quoted) {
             result += this.formatTweet(tweet.quoted, level + 1);
         }
 
-        if (tweet.media && !this.noMedia) {
-            result += this.formatMedia(tweet.media, level);
+        if (tweet.entity.media && !this.noMedia) {
+            result += this.formatMedia(tweet.entity.media, level);
         }
-        if (level == 0) result += this.formatStatusLine(tweet) + Tweet.endLine;
+        if (level == 0) result += this.formatStatusLine(tweet) + this.endLine;
         result += quoteEnd;
         return result;
     }
     
+    private static processText(entity: Entity, text: string) {
+        return entity.processText(text,
+            (name, screenName) => { return this.createUpdatableLink(name, this.userLink(screenName)); },
+            (token, text) => { return this.createUpdatableLink(token, this.hashTagLinkPrefix + text); },
+            (token, text) => { return this.createUpdatableLink(token, this.searchPrefix + text); },
+            (text, url) => { return this.createLink(text, url); });
+    }
+
     private static formatMedia(media: any[], level: number): string {
         var result = '';
         const size = (level == 0) ? ':small' : ':thumb';
-            var mediaStr = media.map<string>((value, index, array): string => {
-                var mediaStr = '';
-                if (value.type == 'video' || value.type == 'animated_gif') {
-                    const control = ((value.type == 'animated_gif') ? Tweet.autoplayControl : Tweet.videoControl);
-                    const variants: any[] = value.video_info.variants;
-                    if (variants.length != 0) {
-                        mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
-                        variants.forEach((video, index, array) => {
-                            mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
-                        });
-                        mediaStr += '</video>';
-                        return mediaStr;
-                    }
+        var mediaStr = media.map<string>((value, index, array): string => {
+            var mediaStr = '';
+            if (value.type == 'video' || value.type == 'animated_gif') {
+                const control = ((value.type == 'animated_gif') ? this.autoplayControl : this.videoControl);
+                const variants: any[] = value.video_info.variants;
+                if (variants.length != 0) {
+                    mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
+                    variants.forEach((video, index, array) => {
+                        mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
+                    });
+                    mediaStr += '</video>';
+                    return mediaStr;
                 }
-                // not video, use image
-                //return '[![](' + value.media_url_https + size + ')](' + value.media_url_https + ':large)';
-                return this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', Tweet.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
-            }).join(' ');
-            if (mediaStr != '') {
-                result += '<p>' + mediaStr + '</p>';
             }
-            return result;
-    }
-    
-    private static createLink(text: string, url: string): string {
-        return '<a target="_blank" href="' + url + '">' + text + '</a>';
-    }
-    
-    private static createRefreshLink(type: TimelineType, query: string): string {
-        return this.createUpdatableLink(Tweet.refreshSymbol, Tweet.reloadLink() + type + (query == null ? '' : '/' + query));
-    }
-    
-    private static createUpdatableLink(text: string, url: string, update: boolean = false): string {
-        const replaceCallback = 'var self=this;xhttp.onreadystatechange=function(){if(xhttp.readyState==4){console.log(\'done\');if(xhttp.responseText!=\'\'){self.outerHTML=xhttp.responseText;}}};';
-        return '<a onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
-    }
-    
-    private static formatUser(tweet: Tweet, level: number): string {
-        var result = ''
-        if (!this.noMedia && level == 0) {
-            result += '<img src="' + tweet.userImage + '"/>&nbsp;';
+            // not video, use image
+            return this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', this.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
+        }).join(' ');
+        if (mediaStr != '') {
+            result += '<p>' + mediaStr + '</p>';
         }
-        if (level == -1) {
-            result += Tweet.retweetSymbol + ' ' + this.createUpdatableLink(tweet.userName, tweet.userLink());
-        } else {
-            result += Tweet.bold(tweet.userName) + ' ' + this.createUpdatableLink(Tweet.normalizeUnderscore('@' + tweet.userScreenName), tweet.userLink());
-        }
+        return result;
+    }
 
-        if (level == 0) {
-            result += Tweet.dotSeparator + moment(tweet.created.replace(/( +)/, ' UTC$1')).fromNow();
-        }
-        if (level != -1) {
-            result += '&nbsp;(' + this.createLink('Detail', tweet.tweetLink()) + ')';
+    static formatUser(user: User, position: UserFormatPosition): string {
+        var result = ''
+        
+        if (position == UserFormatPosition.Tweet) {
+            if (!this.noMedia) {
+                result += '<img src="' + user.image + '"/>&nbsp;' + this.createUpdatableLink(user.name, this.userLink(user.screenName));
+            }
+        } else if (position == UserFormatPosition.Retweet) {
+            result += this.retweetSymbol + ' ' + this.createUpdatableLink(user.name, this.userLink(user.screenName));
+        } else if (position == UserFormatPosition.Quoted) {
+            result += this.bold(user.name) + ' ' + this.createUpdatableLink('@' + user.screenName, this.userLink(user.screenName));
+        } else if (position == UserFormatPosition.Profile) {
+            result += '<div style="float: left; margin-right: 10;"><img style="width: 200; height: 200;" src="' + user.image.replace('_normal', '_400x400') + '"/></div>' + 
+            '<p><span style="font-size: 1.5em;"><strong>' + this.createLink(user.name, this.userDetailLink(user.screenName)) + '</strong></span>&nbsp;&nbsp;' + 
+            this.createLink('@' + user.screenName, this.userDetailLink(user.screenName)) + 
+            this.barSeparator + this.formatFollow(user.following, user.screenName) + '</p>' +
+            (user.url != null ? '<p>' + this.createLink(user.url, user.url) + '</p>' : '') + 
+            '<p>' + this.processText(user.entity, user.description) + '</p>' + 
+            '<p><strong>Location: </strong>&nbsp;' + user.location + '</p>' +
+            '<p><strong>Joined: </strong>&nbsp;' + moment(user.createdAt.replace(/( +)/, ' UTC$1')).format('MMM-DD-YYYY') + '</p>' +  
+            '<p><strong>Statuses: </strong>&nbsp;' + user.statusesCount + this.barSeparator +
+            '<strong>Followers: </strong>&nbsp;' + user.followersCount + this.barSeparator +
+            '<strong>Following: </strong>&nbsp;' + user.friendsCount + '</p>' +
+            '<div style="clear: both;">&nbsp;</div><hr/>';
         }
         return result;
     }
-    
+
     private static formatStatusLine(tweet: Tweet): string {
-        var result = this.createUpdatableLink(Tweet.replySymbol, tweet.replyLink());
-        result += Tweet.spaceSeparator + this.formatRetweet(tweet);
-        result += Tweet.spaceSeparator + this.formatLike(tweet);
+        var result = this.createUpdatableLink(this.replySymbol, this.replyLink(tweet));
+        result += this.spaceSeparator + this.formatRetweet(tweet);
+        result += this.spaceSeparator + this.formatLike(tweet);
         return result;
     }
-    
+
     static formatRetweet(tweet: Tweet): string {
-        var text = Tweet.retweetSymbol + (tweet.retweetCount == 0 ? '' : ' ' + tweet.retweetCount + ' ');
+        var text = this.retweetSymbol + (tweet.retweetCount == 0 ? '' : ' ' + tweet.retweetCount + ' ');
         if (tweet.retweeted) {
             text = '<span class="retweeted">' + text + '</span>';
         }
-        return (tweet.retweeted ? text : this.createUpdatableLink(text, tweet.retweetLink(), true));
+        return (tweet.retweeted ? text : this.createUpdatableLink(text, this.retweetLink(tweet), true));
     }
 
     static formatLike(tweet: Tweet): string {
-        var text = Tweet.heartSymbol + (tweet.likeCount == 0 ? '' : ' ' + tweet.likeCount + ' ');
+        var text = this.heartSymbol + (tweet.likeCount == 0 ? '' : ' ' + tweet.likeCount + ' ');
         if (tweet.liked) {
             text = '<span class="liked">' + text + '</span>';
         }
-        return this.createUpdatableLink(text, tweet.likeLink(), true);
+        return this.createUpdatableLink(text, this.likeLink(tweet), true);
+    }
+    
+    static formatFollow(followed: boolean, screenName: string): string {
+        var text = followed ? 'Following' : '<span class="unfollow">Not Following</span>';
+        return this.createUpdatableLink(text, this.followLink(followed, screenName), true);
     }
 }

@@ -7,12 +7,15 @@ import Tweet from '../models/tweet';
 import * as timeline from '../models/timeline';
 import TwitterTimelineContentProvider from '../models/content';
 import * as querystring from 'querystring';
+import {LocalService, LocalServiceEndpoint} from './service';
+import HTMLFormattr from '../models/html';
 
 export default class MainController implements vscode.Disposable {
     private extensionContext: vscode.ExtensionContext;
     private event: events.EventEmitter = new events.EventEmitter();
     private view: View;
     private contentProvider: TwitterTimelineContentProvider = new TwitterTimelineContentProvider();
+    private service: LocalService = new LocalService();
 
     static CmdStart: string = 'twitter.start';
     static CmdPost: string = 'twitter.post';
@@ -181,7 +184,7 @@ export default class MainController implements vscode.Disposable {
         Wizard.checkConfigurationAndRun(() => { self.twitterTimelineInternal(); });
     }
 
-    private app: any = require('express')();
+    
 
     activate() {
         const self = this;
@@ -208,38 +211,36 @@ export default class MainController implements vscode.Disposable {
         this.event.on(MainController.CmdWizard, () => { self.onTwitterWizard(); });
         this.event.on(MainController.CmdTrend, () => { self.onTwitterTrend(); });
 
-        //this.extensionContext.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => { self.onEditorChange(editor); }));
         this.view.activate();
-
-        // respond with "hello world" when a GET request is made to the homepage
-        this.app.get('/search/:q', function(req, res) {
+        
+        this.service.addHandler('/search/:q', LocalServiceEndpoint.Search, function(req, res) {
             res.send('Searching for ' + req.params.q);
             self.openSearchTimeline(req.params.q);
         });
-        this.app.get('/user/:screen_name', function(req, res) {
+        
+        this.service.addHandler('/user/:screen_name', LocalServiceEndpoint.User, function(req, res) {
             res.send('Searching for @' + req.params.screen_name);
             self.openOtherUserTimeline(req.params.screen_name);
         });
-        this.app.get('/image/:img', function(req, res) {
+        
+        this.service.addHandler('/image/:img', LocalServiceEndpoint.Image, function(req, res) {
             const image = decodeURIComponent(req.params.img);
             res.send('Opening image ' + image);
             self.openImage(image);
         });
-        this.app.get('/refresh/:type/:query', function(req, res) {
+        
+        this.service.addHandler('/refresh/:type/:query?', LocalServiceEndpoint.Refresh, function(req, res) {
             res.send('Refreshing');
             self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type), req.params.query));
             self.openTimelineOfType(parseInt(req.params.type), req.params.query);
         });
-        this.app.get('/refresh/:type', function(req, res) {
-            res.send('Refreshing');
-            self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type)));
-            self.openTimelineOfType(parseInt(req.params.type));
-        });
-        this.app.get('/reply/:id/:user', function(req, res) {
+        
+        this.service.addHandler('/reply/:id/:user', LocalServiceEndpoint.Reply, function(req, res) {
             res.send('');
             self.twitterReplyInternal(req.params.id, req.params.user);
         });
-        this.app.get('/retweet/:id/:url/:brief', function(req, res) {
+        
+        this.service.addHandler('/retweet/:id/:url/:brief', LocalServiceEndpoint.Retweet, function(req, res) {
             vscode.window.showInformationMessage('Would you like to Retweet or Comment?', 'Comment', 'Retweet').then(select => {
                 if (select == 'Retweet') {
                     TwitterClient.retweet(req.params.id).then(content => {
@@ -266,27 +267,44 @@ export default class MainController implements vscode.Disposable {
                 }
             });
         });
-        this.app.get('/like/:id', function(req, res) {
+        
+        this.service.addHandler('/like/:id', LocalServiceEndpoint.Like, function(req, res) {
             TwitterClient.like(req.params.id, false).then(content => {
                 res.send(content);
             }, (error: string) => {
                 vscode.window.showErrorMessage('Failed to like: ' + error);
             });
         });
-        this.app.get('/unlike/:id', function(req, res) {
+        
+        this.service.addHandler('/unlike/:id', LocalServiceEndpoint.Unlike, function(req, res) {
             TwitterClient.like(req.params.id, true).then(content => {
                 res.send(content);
             }, (error: string) => {
                 vscode.window.showErrorMessage('Failed to unlike: ' + error);
             });
         });
+        
+        this.service.addHandler('/follow/:user', LocalServiceEndpoint.Follow, function(req, res) {
+            TwitterClient.follow(req.params.user, false).then(content => {
+                res.send(content);
+            }, (error: string) => {
+                vscode.window.showErrorMessage('Failed to follow: ' + error);
+            });
+        });
+        
+        this.service.addHandler('/unfollow/:user', LocalServiceEndpoint.Unfollow, function(req, res) {
+            TwitterClient.follow(req.params.user, true).then(content => {
+                res.send(content);
+            }, (error: string) => {
+                vscode.window.showErrorMessage('Failed to unfollow: ' + error);
+            });
+        });
 
         var configuration = vscode.workspace.getConfiguration('twitter');
         var port = configuration.get<number>('localServicePort')
         try {
-            const port = this.app.listen(0).address().port;
-            console.log('Local service listening on port ' + port);
-            Tweet.servicePort = port.toString();
+            this.service.start();
+            HTMLFormattr.service = this.service;
         } catch (error) {
             vscode.window.showErrorMessage('Twitter local service failed to listen on port ' + port);
         }

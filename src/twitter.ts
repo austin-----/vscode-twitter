@@ -108,4 +108,19 @@ export default class TwitterClient {
             });
         });
     }
+    
+    static follow(screen_name: string, unfollow: boolean) {
+        const action = (unfollow ? 'destroy' : 'create');
+        return new Promise((resolve, reject) => {
+            TwitterClient.client.post('friendships/' + action, {screen_name: screen_name}, function(error, tweet, response){
+                if (!error) {
+                    resolve(HTMLFormatter.formatFollow(!unfollow, screen_name));
+                } else {
+                    console.error(error);
+					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					reject(msg);
+                }
+            });
+        });
+    }
 }
