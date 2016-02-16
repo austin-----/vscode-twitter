@@ -230,16 +230,25 @@ export default class HTMLFormatter {
             '<p><span style="font-size: 1.5em;"><strong>' + this.createLink(user.name, this.userDetailLink(user.screenName)) + '</strong></span>&nbsp;&nbsp;' + 
             this.createLink('@' + user.screenName, this.userDetailLink(user.screenName)) + 
             this.barSeparator + this.formatFollow(user.following, user.screenName) + '</p>' +
-            (user.url != null ? '<p>' + this.createLink(user.url, user.url) + '</p>' : '') + 
-            '<p>' + this.processText(user.entity, user.description) + '</p>' + 
+            (user.url != null ? '<p>' + this.createLink(this.getExpandedUrl(user), user.url) + '</p>' : '') + 
+            '<p>' + this.processText(user.descriptionEntity, user.description) + '</p>' + 
             '<p><strong>Location: </strong>&nbsp;' + user.location + '</p>' +
             '<p><strong>Joined: </strong>&nbsp;' + moment(user.createdAt.replace(/( +)/, ' UTC$1')).format('MMM-DD-YYYY') + '</p>' +  
-            '<p><strong>Statuses: </strong>&nbsp;' + user.statusesCount + this.barSeparator +
+            '<p><strong>Tweets: </strong>&nbsp;' + user.statusesCount + this.barSeparator +
+            '<strong>Following: </strong>&nbsp;' + user.friendsCount + this.barSeparator +
             '<strong>Followers: </strong>&nbsp;' + user.followersCount + this.barSeparator +
-            '<strong>Following: </strong>&nbsp;' + user.friendsCount + '</p>' +
+            '<strong>Likes: </strong>&nbsp;' + user.favouritesCount +'</p>' +             
             '<div style="clear: both;">&nbsp;</div><hr/>';
         }
         return result;
+    }
+    
+    private static getExpandedUrl(user: User): string {
+        if (user.urlEntity != null && user.urlEntity.urls.length > 0) {
+            return user.urlEntity.urls[0].expanded_url;
+        } else {
+            return user.url;
+        }
     }
 
     private static formatStatusLine(tweet: Tweet): string {
