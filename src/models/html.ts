@@ -134,7 +134,11 @@ export default class HTMLFormatter {
         var result = '<head><link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/0.10.8/src/vs/languages/markdown/common/markdown.css" type="text/css" media="screen">';
         result += '<link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/0.10.8/src/vs/languages/markdown/common/tokens.css" type="text/css" media="screen">';
         result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
-        result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '</h1>' + '<p>' + description + '</p><div id="tweets">' + tweets + '</div></body>';
+    
+        result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
+        '<span style="font-size:0.5em;">Last updated at ' + moment().format('MMM-DD-YYYY HH:mm') + '</span></h1>' + 
+        '<p>' + description + '</p><div id="tweets">' + tweets + '</div></body>';
+        
         const videos = result.match(/<\/video>/gi);
         var videoCount = 0;
         if (videos) {
