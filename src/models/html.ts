@@ -1,6 +1,7 @@
 import Tweet from './tweet';
 import User from './user';
 import Entity from './entity';
+import {TrailingUrlBehavior} from './entity';
 import {TimelineType} from './timeline';
 import {LocalService, LocalServiceEndpoint} from '../controllers/service';
 import * as vscode from 'vscode';
@@ -77,7 +78,7 @@ export default class HTMLFormatter {
     }
 
     static get reloadLink(): string {
-        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Refresh);
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Refresh) + '/';
     }
 
     static tweetLink(tweet: Tweet): string {
@@ -180,8 +181,9 @@ export default class HTMLFormatter {
         return result;
     }
     
-    private static processText(entity: Entity, text: string) {
-        return entity.processText(text,
+    private static processText(entity: Entity, text: string, handleTrailingUrl = true) {
+        var trailingUrlBehavior = handleTrailingUrl ? (this.noMedia ? TrailingUrlBehavior.Urlify : TrailingUrlBehavior.Remove) : TrailingUrlBehavior.NoChange;
+        return entity.processText(text, trailingUrlBehavior, 
             (name, screenName) => { return this.createUpdatableLink(name, this.userLink(screenName)); },
             (token, text) => { return this.createUpdatableLink(token, this.hashTagLinkPrefix + text); },
             (token, text) => { return this.createUpdatableLink(token, this.searchPrefix + text); },
@@ -234,7 +236,7 @@ export default class HTMLFormatter {
             this.createLink('@' + user.screenName, this.userDetailLink(user.screenName)) + 
             this.barSeparator + this.formatFollow(user.following, user.screenName) + '</p>' +
             (user.url != null ? '<p>' + this.createLink(this.getExpandedUrl(user), user.url) + '</p>' : '') + 
-            '<p>' + this.processText(user.descriptionEntity, user.description) + '</p>' + 
+            '<p>' + this.processText(user.descriptionEntity, user.description, false) + '</p>' + 
             '<p><strong>Location: </strong>&nbsp;' + user.location + '</p>' +
             '<p><strong>Joined: </strong>&nbsp;' + moment(user.createdAt.replace(/( +)/, ' UTC$1')).format('MMM-DD-YYYY') + '</p>' +  
             '<p><strong>Tweets: </strong>&nbsp;' + user.statusesCount + this.barSeparator +

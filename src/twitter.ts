@@ -30,6 +30,9 @@ export default class TwitterClient {
                     resolve(items);
                 } else {
                     console.error(error);
+                    if (!(error instanceof Array)) {
+                        error = [error];
+                    }
                     var msg = error.map((value, index, array) => { return value.message; }).join('; ');
                     reject(msg);
                 }

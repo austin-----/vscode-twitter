@@ -11,6 +11,12 @@ export interface Handler {
     (token:string, value:string) : string;
 }
 
+export enum TrailingUrlBehavior {
+    NoChange = 1,
+    Remove,
+    Urlify
+}
+
 export default class Entity {
     media: any[];
     userMentions: any[];
@@ -18,7 +24,7 @@ export default class Entity {
     symbols: any[];
     urls: any[];
     
-    processText(text: string, mentionHandler: Handler, hashTagHandler: Handler, symbolHandler: Handler, urlHandler: Handler): string {
+    processText(text: string, trailingUrlBehavior: TrailingUrlBehavior, mentionHandler: Handler, hashTagHandler: Handler, symbolHandler: Handler, urlHandler: Handler): string {
         var normalized: number[] = <any>punycode.ucs2.decode(text);
 
         var indexArray: any[] = [];
@@ -58,7 +64,7 @@ export default class Entity {
                     token = symbolHandler(token, '$' + value.tag.text);
                     break;
                 case EntityType.Url:
-                    token = urlHandler(token, value.tag.url);
+                    token = urlHandler(value.tag.display_url, value.tag.url);
                     break;
             }
             processed += token;
@@ -66,6 +72,20 @@ export default class Entity {
         });
 
         processed += punycode.ucs2.encode(normalized.slice(last));
+        
+        if (trailingUrlBehavior != TrailingUrlBehavior.NoChange) {
+            if (this.media != null && this.media.length > 0) {
+                const urlReg = /(\s)(https\:\/\/t\.co\/[0-9a-zA-Z]+)$/;
+                const trailingUrls = processed.match(urlReg);
+                if (trailingUrls != null && trailingUrls.length == 3) {
+                    const whole = trailingUrls[0];
+                    const separator = trailingUrls[1];
+                    const url = trailingUrls[2];
+                    processed = processed.replace(whole, trailingUrlBehavior == TrailingUrlBehavior.Remove ? '' : separator + urlHandler(url, url));
+                }
+            }
+        }
+        
         var result = processed;
         return result;
     }
