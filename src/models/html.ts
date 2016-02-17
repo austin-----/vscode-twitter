@@ -219,15 +219,18 @@ export default class HTMLFormatter {
         
         if (position == UserFormatPosition.Tweet) {
             if (!this.noMedia) {
-                result += '<img src="' + user.image + '"/>&nbsp;' + this.createUpdatableLink(user.name, this.userLink(user.screenName));
+                result += '<img src="' + user.image + '"/>&nbsp;';
             }
+            result += this.createUpdatableLink(user.name, this.userLink(user.screenName));
         } else if (position == UserFormatPosition.Retweet) {
             result += this.retweetSymbol + ' ' + this.createUpdatableLink(user.name, this.userLink(user.screenName));
         } else if (position == UserFormatPosition.Quoted) {
             result += this.bold(user.name) + ' ' + this.createUpdatableLink('@' + user.screenName, this.userLink(user.screenName));
         } else if (position == UserFormatPosition.Profile) {
-            result += '<div style="float: left; margin-right: 10;"><img style="width: 200; height: 200;" src="' + user.image.replace('_normal', '_400x400') + '"/></div>' + 
-            '<p><span style="font-size: 1.5em;"><strong>' + this.createLink(user.name, this.userDetailLink(user.screenName)) + '</strong></span>&nbsp;&nbsp;' + 
+            if (!this.noMedia) {
+                result += '<div style="float: left; margin-right: 10;"><img style="width: 200; height: 200;" src="' + user.image.replace('_normal', '_400x400') + '"/></div>';
+            }
+            result += '<p><span style="font-size: 1.5em;"><strong>' + this.createLink(user.name, this.userDetailLink(user.screenName)) + '</strong></span>&nbsp;&nbsp;' + 
             this.createLink('@' + user.screenName, this.userDetailLink(user.screenName)) + 
             this.barSeparator + this.formatFollow(user.following, user.screenName) + '</p>' +
             (user.url != null ? '<p>' + this.createLink(this.getExpandedUrl(user), user.url) + '</p>' : '') + 

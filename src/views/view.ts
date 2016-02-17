@@ -4,7 +4,8 @@ import {TimelineType} from '../models/timeline';
 
 export default class View implements vscode.Disposable {
 	private statusBarItemMain: vscode.StatusBarItem;
-	
+	private searchTipIndex: number = 0;
+    
 	activate() {
 		this.statusBarItemMain = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 6);
 		this.statusBarItemMain.text = '$(home)Twitter'
@@ -45,18 +46,24 @@ export default class View implements vscode.Disposable {
 			'from:alexiskold | sent from person “alexiskold”.',
 			'to:techcrunch | sent to person “techcrunch”.',
 			'@mashable | referencing person “mashable”.',
+            'list:NASA/astronauts | sent from an account in the NASA list astronauts',
 			'superhero since:2015-07-19	| containing “superhero” since “2015-07-19”.',
 			'ftw until:2015-07-19 | containing “ftw” and sent before “2015-07-19”.',
 			'movie -scary :) | containing “movie”, but not “scary”, and with a positive attitude.',
 			'flight :( | containing “flight” and with a negative attitude.',
 			'traffic ? | containing “traffic” and asking a question.',
+            'politics filter:safe | containing “politics” and marked as potentially sensitive removed.',
+            'puppy filter:media	| containing “puppy” and an image or video.',
+            'puppy filter:images | containing “puppy” and an image.',
 			'hilarious filter:links	| containing “hilarious” and linking to URL.',
 			'news source:twitterfeed | containing “news” and entered via TwitterFeed.'
 		];
-
+        
+        this.searchTipIndex ++;
+        this.searchTipIndex %= tips.length;
 		return vscode.window.showInputBox({
 			placeHolder: 'Search Twitter',
-			prompt: 'Tip: ' + tips[Math.floor(Math.random() * tips.length)]
+			prompt: 'Tip: ' + tips[this.searchTipIndex]
 		});
 	}
 	
