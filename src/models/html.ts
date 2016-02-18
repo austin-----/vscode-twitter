@@ -136,7 +136,7 @@ export default class HTMLFormatter {
         result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
     
         result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
-        '<span style="font-size:0.5em;">Last updated at ' + moment().format('MMM-DD-YYYY hh:mm A') + '</span></h1>' + 
+        '<span style="font-size:0.5em;">Last updated at ' + moment().format('h:mm A, MMM D, YYYY') + '</span></h1>' + 
         '<p>' + description + '</p><div id="tweets">' + tweets + '</div></body>';
         
         const videos = result.match(/<\/video>/gi);
