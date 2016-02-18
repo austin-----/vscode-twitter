@@ -136,7 +136,7 @@ export default class HTMLFormatter {
         result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
     
         result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
-        '<span style="font-size:0.5em;">Last updated at ' + moment().format('MMM-DD-YYYY HH:mm') + '</span></h1>' + 
+        '<span style="font-size:0.5em;">Last updated at ' + moment().format('MMM-DD-YYYY hh:mm A') + '</span></h1>' + 
         '<p>' + description + '</p><div id="tweets">' + tweets + '</div></body>';
         
         const videos = result.match(/<\/video>/gi);
@@ -152,35 +152,34 @@ export default class HTMLFormatter {
     }
 
     static formatTweets(tweets: Tweet[]): string {
-        return tweets.map<string>((t) => { return this.formatTweet(t); }).join('');
+        return tweets.map<string>((t) => { return this.formatTweet(t, false); }).join('');
     }
 
-    private static formatTweet(tweet: Tweet, level: number = 0): string {
+    private static formatTweet(tweet: Tweet, quoted: boolean): string {
 
         var autoplayControl = this.autoPlay ? this.autoplayControl : ' ';
-        var quoteBegin = '<blockquote>'.repeat(level);
-        var quoteEnd = '</blockquote>'.repeat(level);
+        var quoteBegin = '<blockquote>'.repeat(quoted ? 1 : 0);
+        var quoteEnd = '</blockquote>'.repeat(quoted ? 1 : 0);
         if (tweet.retweeted_status) {
-            return '<p>' + this.formatUser(tweet.user, UserFormatPosition.Retweet) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, level) + '</p>';
+            return '<p>' + this.formatUser(tweet.user, UserFormatPosition.Retweet) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, quoted) + '</p>';
         }
 
-        var result = quoteBegin + '<p>' + this.formatUser(tweet.user, level == 0 ? UserFormatPosition.Tweet : UserFormatPosition.Quoted);
-        if (level == 0) {
+        var result = quoteBegin + '<p>' + this.formatUser(tweet.user, quoted ? UserFormatPosition.Quoted : UserFormatPosition.Tweet);
+        if (!quoted) {
             result += this.dotSeparator + moment(tweet.created.replace(/( +)/, ' UTC$1')).fromNow();
         }
-        if (level != -1) {
-            result += '&nbsp;(' + this.createLink('Detail', this.tweetLink(tweet)) + ')';
-        }
+        
+        result += '&nbsp;(' + this.createLink('Detail', this.tweetLink(tweet)) + ')';
         result += '</p><p>' + this.processText(tweet.entity, tweet.text) + '</p>';
 
         if (tweet.quoted) {
-            result += this.formatTweet(tweet.quoted, level + 1);
+            result += this.formatTweet(tweet.quoted, true);
         }
 
         if (tweet.entity.media && !this.noMedia) {
-            result += this.formatMedia(tweet.entity.media, level);
+            result += this.formatMedia(tweet.entity.media, quoted);
         }
-        if (level == 0) result += this.formatStatusLine(tweet) + this.endLine;
+        if (!quoted) result += this.formatStatusLine(tweet) + this.endLine;
         result += quoteEnd;
         return result;
     }
@@ -194,9 +193,9 @@ export default class HTMLFormatter {
             (text, url) => { return this.createLink(text, url); });
     }
 
-    private static formatMedia(media: any[], level: number): string {
+    private static formatMedia(media: any[], quoted: boolean): string {
         var result = '';
-        const size = (level == 0) ? ':small' : ':thumb';
+        const size = quoted ? ':thumb' : ':small';
         var mediaStr = media.map<string>((value, index, array): string => {
             var mediaStr = '';
             if (value.type == 'video' || value.type == 'animated_gif') {
