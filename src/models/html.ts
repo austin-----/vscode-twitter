@@ -114,7 +114,7 @@ export default class HTMLFormatter {
     }
 
     private static createRefreshLink(type: TimelineType, query: string): string {
-        return this.createUpdatableLink(this.refreshSymbol, this.reloadLink + type + (query == null ? '' : '/' + query));
+        return this.createUpdatableLink(this.refreshSymbol, this.reloadLink + type + (query == null ? '' : '/' + querystring.escape(query)));
     }
 
     private static createUpdatableLink(text: string, url: string, update: boolean = false): string {
