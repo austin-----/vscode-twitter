@@ -231,7 +231,7 @@ export default class MainController implements vscode.Disposable {
         
         this.service.addHandler('/refresh/:type/:query?', LocalServiceEndpoint.Refresh, function(req, res) {
             res.send('Refreshing');
-            self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type), querystring.escape(req.params.query)));
+            self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type), req.params.query == null ? null : querystring.escape(req.params.query)));
             self.openTimelineOfType(parseInt(req.params.type), req.params.query);
         });
         
