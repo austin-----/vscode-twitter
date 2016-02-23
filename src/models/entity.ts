@@ -75,13 +75,11 @@ export default class Entity {
         
         if (trailingUrlBehavior != TrailingUrlBehavior.NoChange) {
             if (this.media != null && this.media.length > 0) {
-                const urlReg = /(\s)(https\:\/\/t\.co\/[0-9a-zA-Z]+)$/;
+                const urlReg = /\bhttps\:\/\/t\.co\/[0-9a-zA-Z]+$/;
                 const trailingUrls = processed.match(urlReg);
-                if (trailingUrls != null && trailingUrls.length == 3) {
-                    const whole = trailingUrls[0];
-                    const separator = trailingUrls[1];
-                    const url = trailingUrls[2];
-                    processed = processed.replace(whole, trailingUrlBehavior == TrailingUrlBehavior.Remove ? '' : separator + urlHandler(url, url));
+                if (trailingUrls != null && trailingUrls.length == 1) {
+                    const url = trailingUrls[0];
+                    processed = processed.replace(url, trailingUrlBehavior == TrailingUrlBehavior.Remove ? '' : urlHandler(url, url));
                 }
             }
         }
