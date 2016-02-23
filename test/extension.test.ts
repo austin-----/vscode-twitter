@@ -11,6 +11,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as timeline from '../src/models/timeline';
 import * as service from '../src/controllers/service';
+import Entity from '../src/models/entity';
 
 // Defines a Mocha test suite to group tests of similar kind together
 suite("Extension Tests", () => {
@@ -32,5 +33,12 @@ suite("Extension Tests", () => {
         svc.addHandler('/test/:item', service.LocalServiceEndpoint.Search, (req, res) => {});
         assert.equal(svc.getSegment(service.LocalServiceEndpoint.Search), 'test');
     }); 
+    
+    test("trailing url removal tests", () => {
+        Entity.replaceTrailingUrl('https://t.co/8ZkCYYxTZQ', (url) => {
+            assert.equal(url, 'https://t.co/8ZkCYYxTZQ');
+            return ''; 
+        });
+    });
 
 });

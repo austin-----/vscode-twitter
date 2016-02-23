@@ -75,17 +75,24 @@ export default class Entity {
         
         if (trailingUrlBehavior != TrailingUrlBehavior.NoChange) {
             if (this.media != null && this.media.length > 0) {
-                const urlReg = /\bhttps\:\/\/t\.co\/[0-9a-zA-Z]+$/;
-                const trailingUrls = processed.match(urlReg);
-                if (trailingUrls != null && trailingUrls.length == 1) {
-                    const url = trailingUrls[0];
-                    processed = processed.replace(url, trailingUrlBehavior == TrailingUrlBehavior.Remove ? '' : urlHandler(url, url));
-                }
+                processed = Entity.replaceTrailingUrl(processed, trailingUrlBehavior == TrailingUrlBehavior.Remove ? (url) => {return '';} : (url) => {return urlHandler(url, url);});
             }
         }
         
         var result = processed;
         return result;
+    }
+    
+    static replaceTrailingUrl(content: string, replace: (string) => string): string {
+        const urlReg = /\bhttps\:\/\/t\.co\/[0-9a-zA-Z]+$/;
+        const trailingUrls = content.match(urlReg);
+        if (trailingUrls != null && trailingUrls.length == 1) {
+            const url = trailingUrls[0];
+            content = content.replace(url, replace(url));
+            return content;
+        } else {
+            return content;
+        }
     }
     
     static fromJson(entityJson: any, extended_entityJson: any): Entity {
