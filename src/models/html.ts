@@ -131,8 +131,8 @@ export default class HTMLFormatter {
     }
 
     static formatTimeline(title: string, type: TimelineType, query: string, description: string, tweets: string): string {
-        var result = '<head><link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/0.10.8/src/vs/languages/markdown/common/markdown.css" type="text/css" media="screen">';
-        result += '<link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/0.10.8/src/vs/languages/markdown/common/tokens.css" type="text/css" media="screen">';
+        var result = '<head><link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/1.4.0/src/vs/languages/markdown/common/markdown.css" type="text/css" media="screen">';
+        result += '<link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/1.4.0/src/vs/languages/markdown/common/tokens.css" type="text/css" media="screen">';
         result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
     
         result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
