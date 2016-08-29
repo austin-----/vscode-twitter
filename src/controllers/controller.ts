@@ -38,12 +38,8 @@ export default class MainController implements vscode.Disposable {
 
     private openTimeline(message: string, uri: vscode.Uri, newWindow = false) {
         const self = this;
-        var viewColumn = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : (newWindow ? vscode.ViewColumn.Three : null);
-        if (vscode.window.activeTextEditor) {
-            viewColumn = (viewColumn) % 3 + 1;
-        }
         vscode.window.setStatusBarMessage(message,
-            vscode.commands.executeCommand('vscode.previewHtml', uri, viewColumn).then((success) => { },
+            vscode.commands.executeCommand('vscode.previewHtml', uri).then((success) => { },
                 (reason) => {
                     vscode.window.showErrorMessage(reason);
                 })

@@ -3,10 +3,10 @@
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "publisher": "austin",
   "engines": {
-    "vscode": "^0.10.8"
+    "vscode": "^1.4.0"
   },
   "categories": [
     "Other"
@@ -85,7 +85,7 @@
     "postinstall": "node ./node_modules/vscode/bin/install"
   },
   "devDependencies": {
-    "typescript": "^1.7.5",
+    "typescript": "^1.8.10",
     "vscode": "0.11.x"
   },
   "dependencies": {
