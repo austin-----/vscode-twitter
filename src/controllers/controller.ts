@@ -1,5 +1,6 @@
 import * as events from 'events';
 import * as vscode from 'vscode';
+import * as https from 'https';
 import TwitterClient from '../twitter';
 import Wizard from '../wizard';
 import View from '../views/view';
@@ -293,6 +294,20 @@ export default class MainController implements vscode.Disposable {
                 res.send(content);
             }, (error: string) => {
                 vscode.window.showErrorMessage('Failed to unfollow: ' + error);
+            });
+        });
+
+        this.service.addHandler('/css', LocalServiceEndpoint.Css, function(req, res) {
+            https.get('https://raw.githubusercontent.com/Microsoft/vscode/master/extensions/markdown/media/markdown.css', function(message) {
+                var content = "";
+                message.on('data', function(chunk){
+                    content += chunk;
+                });
+                message.on('end', function(){
+                    res.setHeader('Content-Type', 'text/css');
+                    res.send(content);
+                });
+                message.resume();
             });
         });
 

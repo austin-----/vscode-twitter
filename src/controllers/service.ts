@@ -12,7 +12,8 @@ export enum LocalServiceEndpoint {
     Like,
     Unlike,
     Follow,
-    Unfollow
+    Unfollow,
+    Css
 }
 
 export class LocalService {

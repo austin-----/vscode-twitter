@@ -81,6 +81,10 @@ export default class HTMLFormatter {
         return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Refresh) + '/';
     }
 
+    static get cssLink(): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Css) + '/';
+    }
+
     static tweetLink(tweet: Tweet): string {
         return 'https://twitter.com/' + tweet.user.screenName + '/status/' + tweet.id;
     }
@@ -119,7 +123,7 @@ export default class HTMLFormatter {
 
     private static createUpdatableLink(text: string, url: string, update: boolean = false): string {
         const replaceCallback = 'var self=this;xhttp.onreadystatechange=function(){if(xhttp.readyState==4){console.log(\'done\');if(xhttp.responseText!=\'\'){self.outerHTML=xhttp.responseText;}}};';
-        return '<a onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
+        return '<a href="#" onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
     }
 
     private static bold(text: string): string {
@@ -131,8 +135,7 @@ export default class HTMLFormatter {
     }
 
     static formatTimeline(title: string, type: TimelineType, query: string, description: string, tweets: string): string {
-        var result = '<head><link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/1.4.0/src/vs/languages/markdown/common/markdown.css" type="text/css" media="screen">';
-        result += '<link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/1.4.0/src/vs/languages/markdown/common/tokens.css" type="text/css" media="screen">';
+        var result = '<head><link rel="stylesheet" href="' + this.cssLink + '" type="text/css" media="screen">';
         result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
     
         result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
@@ -203,7 +206,9 @@ export default class HTMLFormatter {
                 const variants: any[] = value.video_info.variants;
                 if (variants.length != 0) {
                     mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
-                    variants.forEach((video, index, array) => {
+                    variants.filter((video, index, array) => { 
+                        return (video.content_type as string).startsWith("video"); 
+                    }).forEach((video, index, array) => {
                         mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
                     });
                     mediaStr += '</video>';
