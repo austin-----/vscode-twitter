@@ -3,7 +3,7 @@
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
   "icon": "logo.svg",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "publisher": "austin",
   "engines": {
     "vscode": "^1.4.0"
