@@ -21,12 +21,12 @@ export default class TwitterWizard {
 	
 	static isNotConfigured(): boolean {
 		var configuration = vscode.workspace.getConfiguration('twitter');
-		var consumer_key = configuration.get<string>('consumerkey');
-		var consumer_secret = configuration.get<string>('consumersecret');
-		var access_token_key = configuration.get<string>('accesstokenkey');
-		var access_token_secret = configuration.get<string>('accesstokensecret');
+		var consumerKey = configuration.get<string>('consumerkey');
+		var consumerSecret = configuration.get<string>('consumersecret');
+		var accessTokenKey = configuration.get<string>('accesstokenkey');
+		var accessTokenSecret = configuration.get<string>('accesstokensecret');
 		
-		if (consumer_key == "" || consumer_secret == "" || access_token_key == "" || access_token_secret == "") {
+		if (consumerKey == "" || consumerSecret == "" || accessTokenKey == "" || accessTokenSecret == "") {
 			return true;
 		} else {
 			return false;

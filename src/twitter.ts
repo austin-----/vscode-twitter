@@ -10,15 +10,15 @@ var Twitter = require('twitter');
 export default class TwitterClient {
     private static get client(): any {
         var configuration = vscode.workspace.getConfiguration('twitter');
-        var consumer_key = configuration.get('consumerkey');
-        var consumer_secret = configuration.get('consumersecret');
-        var access_token_key = configuration.get('accesstokenkey');
-        var access_token_secret = configuration.get('accesstokensecret');
+        var consumerKey = configuration.get('consumerkey');
+        var consumerSecret = configuration.get('consumersecret');
+        var accessTokenKey = configuration.get('accesstokenkey');
+        var accessTokenSecret = configuration.get('accesstokensecret');
         var client = new Twitter({
-            consumer_key,
-            consumer_secret,
-            access_token_key,
-            access_token_secret
+            consumer_key: consumerKey,
+            consumer_secret: consumerSecret,
+            access_token_key: accessTokenKey,
+            access_token_secret: accessTokenSecret
         });
         return client;
     };
@@ -112,12 +112,12 @@ export default class TwitterClient {
         });
     }
     
-    static follow(screen_name: string, unfollow: boolean) {
+    static follow(screenName: string, unfollow: boolean) {
         const action = (unfollow ? 'destroy' : 'create');
         return new Promise((resolve, reject) => {
-            TwitterClient.client.post('friendships/' + action, {screen_name: screen_name}, function(error, tweet, response){
+            TwitterClient.client.post('friendships/' + action, {screen_name: screenName}, function(error, tweet, response){
                 if (!error) {
-                    resolve(HTMLFormatter.formatFollow(!unfollow, screen_name));
+                    resolve(HTMLFormatter.formatFollow(!unfollow, screenName));
                 } else {
                     console.error(error);
 					var msg = error.map((value, index, array) => { return value.message; }).join(';');

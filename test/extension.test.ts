@@ -18,7 +18,7 @@ suite("Extension Tests", () => {
 
     // Defines a Mocha unit test
     test("timeline tests", (done) => {
-        timeline.TimelineFactory.getTimeline(timeline.TimelineType.Home).getTweets().then((value: string) => {
+        timeline.TimelineFactory.getTimeline(timeline.TimelineType.Home).getHTML().then((value: string) => {
             assert.notEqual(value, null);
             console.log(value.length);
             done();

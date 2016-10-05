@@ -11,6 +11,7 @@ export default class TwitterTimelineContentProvider implements vscode.TextDocume
 
     provideTextDocumentContent(uri: vscode.Uri): Thenable<string> {
         console.log('Ask for content: ' + uri.toString());
+        const getNew = uri.fragment != 'false';
         var index = this.segments.findIndex((value) => (uri.authority + uri.path).startsWith(value));
         if (index != null) {
             var type = this.types[index];
@@ -33,6 +34,7 @@ export default class TwitterTimelineContentProvider implements vscode.TextDocume
     }
 
     public update(uri: vscode.Uri) {
+        console.log('Document update with uri: ' + uri);
         this._onDidChange.fire(uri);
     }
 
@@ -47,7 +49,9 @@ export default class TwitterTimelineContentProvider implements vscode.TextDocume
             var segment = this.segments[index];
             if (segment != null) {
                 const q = query == null ? '' : '/' + query + '?' + query;
-                return vscode.Uri.parse(TwitterTimelineContentProvider.schema + '://' + segment + q);
+                const uri = TwitterTimelineContentProvider.schema + '://' + segment + q;
+                console.log('getUri: ' + uri);
+                return vscode.Uri.parse(uri);
             }
         }
         return null;

@@ -17,11 +17,15 @@ export enum TimelineType {
 }
 
 export interface Timeline {
-    getTweets(): Thenable<string>;
+    getNew: boolean;
     getHTML(): Thenable<string>;
 }
 
 export class TimelineFactory {
+
+    static otherUserTimelineList: Array<OtherUserTimeline> = [];
+    static searchTimelineList: Array<SearchTimeline> = [];
+
     static getTimeline(type: TimelineType, param?: string): Timeline {
         var timeline: Timeline = null;
         switch (type) {
@@ -36,12 +40,30 @@ export class TimelineFactory {
                 break;
             case TimelineType.OtherUser:
                 if (param != null) {
-                    timeline = new OtherUserTimeline(param);
+                    timeline = this.otherUserTimelineList.find((v, i, a) => { return v.query == param; });
+                    if (timeline == null)
+                    {
+                        console.log('create new other user timeline for ' + param);
+                        timeline = new OtherUserTimeline(param);
+                        this.otherUserTimelineList.push(timeline as OtherUserTimeline);
+                        if (this.otherUserTimelineList.length >= 20) {
+                            this.otherUserTimelineList.shift();
+                        }
+                    }
                 }
                 break;
             case TimelineType.Search:
                 if (param != null) {
-                    timeline = new SearchTimeline(param);
+                    timeline = this.searchTimelineList.find((v, i, a) => { return v.query == param; });
+                    if (timeline == null)
+                    {
+                        console.log('create new search timeline for ' + param);
+                        timeline = new SearchTimeline(param);
+                        this.searchTimelineList.push(timeline as SearchTimeline);
+                        if (this.searchTimelineList.length >= 20) {
+                            this.searchTimelineList.shift();
+                        }
+                    }
                 }
                 break;
         }
@@ -54,33 +76,55 @@ abstract class BaseTimeline implements Timeline {
     type: TimelineType;
     query: string;
 
-    since_id: string;
+    sinceId: string;
+    maxId: string;
     tweets: Tweet[];
 
     params: any = { count: 100 };
     endpoint: string = '';
 
     title: string;
+    getNew: boolean = true;
 
     getTweets(): Thenable<string> {
+        console.log('getTweets: ' + this.getNew);
         const self = this;
-        var params: any = this.params;
-        if (this.since_id) {
-            params.since_id = this.since_id;
+        var params: any = Object.assign({}, this.params);
+        if (this.sinceId && this.getNew) {
+            params.since_id = this.sinceId;
         }
+
+        if (this.maxId && !this.getNew) {
+            params.max_id = this.maxId;
+        }
+
         return new Promise((resolve, reject) => {
             TwitterClient.get(self.endpoint, params).then((tweets: any) => {
                 if (!(tweets instanceof Array)) {
                     tweets = tweets.statuses;
                 };
-                // older tweets go first
-                tweets.reverse().forEach((value, index, array) => {
-                    self.since_id = value.id_str;
-                    // don't cache more than 1000 tweets
-                    if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
-                        self.tweets.pop();
+
+                if (this.getNew) {
+                    tweets = tweets.reverse();
+                } else {
+                    // older tweet has a duplicate entry
+                    tweets.shift();
+                }
+
+                tweets.forEach((value, index, array) => {
+                    if (this.getNew) {
+                        // don't cache more than 1000 tweets
+                        if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
+                            self.tweets.pop();
+                        }
+                    } else {
+                        // don't remove newer tweets
+                        self.tweets.push(Tweet.fromJson(value));
                     }
                 });
+
+                self.maxId = self.tweets[self.tweets.length - 1].id;
+                self.sinceId = self.tweets[0].id;
                 var result = HTMLFormatter.formatTweets(self.tweets);
                 resolve(result);
             }, (error) => {
@@ -187,6 +231,7 @@ class OtherUserTimeline extends BaseTimeline {
     getHTML(): Thenable<string> {
         return new Promise((resolve, reject) => {
             const self = this;
+            console.log('OtherUsertimeline: getNew ' + this.getNew);
             this.getTweets().then((value) => {
                 TwitterClient.get(self.profileEndPoint, { screen_name: self.query, include_entities: true }).then((user) => {
                     var userProfile = User.fromJson(user);
@@ -219,14 +264,25 @@ class SearchTimeline extends BaseTimeline {
 
     getTweets(): Thenable<string> {
         const self = this;
-        this.params.q = this.keyword;
-        this.params.include_entities = false;
+
+        var params = Object.assign({}, this.params);
+        if (this.sinceId && this.getNew) {
+            params.since_id = this.sinceId;
+        }
+        if (this.maxId && !this.getNew) {
+            params.max_id = this.maxId;
+        }
+
+        params.q = this.keyword;
+        params.include_entities = false;
+
         return new Promise((resolve, reject) => {
-            TwitterClient.get(self.searchEndPoint, self.params).then((tweets: any) => {
+            TwitterClient.get(self.searchEndPoint, params).then((tweets: any) => {
                 if (!(tweets instanceof Array)) {
                     tweets = tweets.statuses;
                 };
                 self.params.id = (<any[]>tweets).map<string>((value, index, array): string => { return value.id_str; }).join(',');
+                console.log('Search results: ' + self.params.id);
                 self.params.include_entities = true;
                 self.parentGetNew().then(value => {
                     resolve(value);

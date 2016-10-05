@@ -7,6 +7,7 @@ import {LocalService, LocalServiceEndpoint} from '../controllers/service';
 import * as vscode from 'vscode';
 import * as querystring from 'querystring';
 
+var stringz = require('stringz');
 var moment = require('moment');
 
 export enum UserFormatPosition {
@@ -77,8 +78,8 @@ export default class HTMLFormatter {
         return this.serviceUrl + (followed? this.service.getSegment(LocalServiceEndpoint.Unfollow) + '/' : this.service.getSegment(LocalServiceEndpoint.Follow) + '/');
     }
 
-    static get reloadLink(): string {
-        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Refresh) + '/';
+    static reloadLink(getNew: boolean): string {
+        return this.serviceUrl + this.service.getSegment(LocalServiceEndpoint.Refresh) + '/' + (getNew ? 'true' : 'false') + '/';
     }
 
     static get cssLink(): string {
@@ -102,7 +103,7 @@ export default class HTMLFormatter {
     }
 
     static retweetLink(tweet: Tweet): string {
-        return (tweet.retweeted ? '' : this.retweetPrefix + tweet.id + '/' + querystring.escape(this.tweetLink(tweet)) + '/' + querystring.escape('@' + tweet.user.screenName + ': ' + tweet.text.slice(0, 10)));
+        return (tweet.retweeted ? '' : this.retweetPrefix + tweet.id + '/' + querystring.escape(this.tweetLink(tweet)) + '/' + querystring.escape('@' + tweet.user.screenName + ': ' + stringz.limit(tweet.text, 10)));
     }
 
     static replyLink(tweet: Tweet): string {
@@ -118,7 +119,11 @@ export default class HTMLFormatter {
     }
 
     private static createRefreshLink(type: TimelineType, query: string): string {
-        return this.createUpdatableLink(this.refreshSymbol, this.reloadLink + type + (query == null ? '' : '/' + querystring.escape(query)));
+        return this.createUpdatableLink(this.refreshSymbol, this.reloadLink(true) + type + (query == null ? '' : '/' + querystring.escape(query)));
+    }
+
+    private static createLoadOlderLink(type: TimelineType, query: string): string {
+        return this.createUpdatableLink('Load more tweets...', this.reloadLink(false) + type + (query == null ? '' : '/' + querystring.escape(query)));
     }
 
     private static createUpdatableLink(text: string, url: string, update: boolean = false): string {
@@ -138,9 +143,9 @@ export default class HTMLFormatter {
         var result = '<head><link rel="stylesheet" href="' + this.cssLink + '" type="text/css" media="screen">';
         result += '<style>*{font-size: inherit;} h1{font-size: 2em;} span.liked{color: red;} span.retweeted{color: green;} span.unfollow{color: red;}</style></head>';
     
-        result += '<body><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
+        result += '<body><div style="padding-right:16px;"><h1>' + title + '&nbsp;' + this.createRefreshLink(type, query) + '&nbsp;&nbsp;' + 
         '<span style="font-size:0.5em;">Last updated at ' + moment().format('h:mm A, MMM D, YYYY') + '</span></h1>' + 
-        '<p>' + description + '</p><div id="tweets">' + tweets + '</div></body>';
+        '<p>' + description + '</p><div id="tweets">' + tweets + '</div><center><h1>' + this.createLoadOlderLink(type, query) + '</h1></center></div></body>';
         
         const videos = result.match(/<\/video>/gi);
         var videoCount = 0;
@@ -163,8 +168,8 @@ export default class HTMLFormatter {
         var autoplayControl = this.autoPlay ? this.autoplayControl : ' ';
         var quoteBegin = '<blockquote>'.repeat(quoted ? 1 : 0);
         var quoteEnd = '</blockquote>'.repeat(quoted ? 1 : 0);
-        if (tweet.retweeted_status) {
-            return '<p>' + this.formatUser(tweet.user, UserFormatPosition.Retweet) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweeted_status, quoted) + '</p>';
+        if (tweet.retweetedStatus) {
+            return '<p>' + this.formatUser(tweet.user, UserFormatPosition.Retweet) + ' ' + 'Retweeted' + '</p><p>' + this.formatTweet(tweet.retweetedStatus, quoted) + '</p>';
         }
 
         var result = quoteBegin + '<p>' + this.formatUser(tweet.user, quoted ? UserFormatPosition.Quoted : UserFormatPosition.Tweet);
@@ -238,7 +243,7 @@ export default class HTMLFormatter {
             result += this.bold(user.name) + ' ' + this.createUpdatableLink('@' + user.screenName, this.userLink(user.screenName));
         } else if (position == UserFormatPosition.Profile) {
             if (!this.noMedia) {
-                result += '<div style="float: left; margin-right: 10;"><img style="width: 200; height: 200;" src="' + user.image.replace('_normal', '_400x400') + '"/></div>';
+                result += '<div style="float: left; margin-right: 1em;"><img style="width: 200; height: 200;" src="' + user.image.replace('_normal', '_400x400') + '"/></div>';
             }
             result += '<p><span style="font-size: 1.5em;"><strong>' + this.createLink(user.name, this.userDetailLink(user.screenName)) + '</strong></span>&nbsp;&nbsp;' + 
             this.createLink('@' + user.screenName, this.userDetailLink(user.screenName)) + 

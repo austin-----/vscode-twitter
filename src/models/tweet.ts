@@ -8,7 +8,7 @@ export default class Tweet {
     created: string;
     quoted: Tweet;
     entity: Entity;
-    retweeted_status: Tweet;
+    retweetedStatus: Tweet;
     retweetCount: number;
     retweeted: boolean;
     likeCount: number;
@@ -35,7 +35,7 @@ export default class Tweet {
         }
 
         if (tweetJson.retweeted_status) {
-            tweet.retweeted_status = Tweet.fromJson(tweetJson.retweeted_status);
+            tweet.retweetedStatus = Tweet.fromJson(tweetJson.retweeted_status);
         }
 	    
         tweet.entity = Entity.fromJson(tweetJson.entities, tweetJson.extended_entities);

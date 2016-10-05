@@ -95,7 +95,7 @@ export default class Entity {
         }
     }
     
-    static fromJson(entityJson: any, extended_entityJson: any): Entity {
+    static fromJson(entityJson: any, extendedEntityJson: any): Entity {
         var entity = new Entity();
         if (entityJson) {
             if (entityJson.user_mentions) {
@@ -110,9 +110,9 @@ export default class Entity {
             if (entityJson.urls) {
                 entity.urls = entityJson.urls;
             }
-            if (extended_entityJson) {
-                if (extended_entityJson.media) {
-                    entity.media = extended_entityJson.media;
+            if (extendedEntityJson) {
+                if (extendedEntityJson.media) {
+                    entity.media = extendedEntityJson.media;
             	}
             }
         }

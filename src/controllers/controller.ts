@@ -143,7 +143,7 @@ export default class MainController implements vscode.Disposable {
     }
 
     private twitterStartInternal() {
-        this.openTimelineOfType(timeline.TimelineType.Home);
+        this.openTimelineOfType(timeline.TimelineType.Home, null);
     }
 
     private onTwitterStart() {
@@ -160,7 +160,7 @@ export default class MainController implements vscode.Disposable {
                     case timeline.TimelineType.Home:
                     case timeline.TimelineType.User:
                     case timeline.TimelineType.Mentions:
-                        self.openTimelineOfType(v.type);
+                        self.openTimelineOfType(v.type, null);
                         break;
                     case timeline.TimelineType.Search:
                         self.twitterSearchInternal();
@@ -226,10 +226,15 @@ export default class MainController implements vscode.Disposable {
             self.openImage(image);
         });
         
-        this.service.addHandler('/refresh/:type/:query?', LocalServiceEndpoint.Refresh, function(req, res) {
-            res.send('Refreshing');
-            self.contentProvider.update(self.contentProvider.getUri(parseInt(req.params.type), req.params.query == null ? null : querystring.escape(req.params.query)));
-            self.openTimelineOfType(parseInt(req.params.type), req.params.query);
+        this.service.addHandler('/refresh/:getnew/:type/:query?', LocalServiceEndpoint.Refresh, function(req, res) {
+            res.send('Refreshing ' + req.params.getnew);
+            console.log('Refreshing ' + req.params.getnew);
+            const type = parseInt(req.params.type);
+            const uri = self.contentProvider.getUri(type, req.params.query == null ? null : querystring.escape(req.params.query));
+            const tl = timeline.TimelineFactory.getTimeline(type, uri.query);
+            tl.getNew = req.params.getnew != 'false';
+            self.contentProvider.update(uri);
+            self.openTimelineOfType(type, req.params.query);
         });
         
         this.service.addHandler('/reply/:id/:user', LocalServiceEndpoint.Reply, function(req, res) {
