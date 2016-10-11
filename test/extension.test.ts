@@ -23,7 +23,7 @@ suite("Extension Tests", () => {
             console.log(value.length);
             done();
         }, (error) => {
-            assert.fail(0, 1, error);
+            assert.fail(1, 0, error, '');
             done();
         })
     });

@@ -117,6 +117,9 @@ abstract class BaseTimeline implements Timeline {
                         if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
                             self.tweets.pop();
                         }
+                        while (self.tweets.length > 1000) {
+                            self.tweets.pop();
+                        }
                     } else {
                         // don't remove newer tweets
                         self.tweets.push(Tweet.fromJson(value));
