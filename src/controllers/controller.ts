@@ -37,7 +37,7 @@ export default class MainController implements vscode.Disposable {
         }));
     }
 
-    private openTimeline(message: string, uri: vscode.Uri, newWindow = false) {
+    private openTimeline(message: string, uri: vscode.Uri) {
         const self = this;
         vscode.window.setStatusBarMessage(message,
             vscode.commands.executeCommand('vscode.previewHtml', uri).then((success) => { },
@@ -68,7 +68,7 @@ export default class MainController implements vscode.Disposable {
     private openImage(url: string) {
         console.log('Opening image ' + url);
         const uri = this.contentProvider.getUri(timeline.TimelineType.Image, querystring.escape(url));
-        this.openTimeline('Opening image ' + url + ' ...', uri, true);
+        this.openTimeline('Opening image ' + url + ' ...', uri);
     }
 
     private twitterSearchInternal() {
@@ -234,7 +234,6 @@ export default class MainController implements vscode.Disposable {
             const tl = timeline.TimelineFactory.getTimeline(type, uri.query);
             tl.getNew = req.params.getnew != 'false';
             self.contentProvider.update(uri);
-            self.openTimelineOfType(type, req.params.query);
         });
         
         this.service.addHandler('/reply/:id/:user', LocalServiceEndpoint.Reply, function(req, res) {

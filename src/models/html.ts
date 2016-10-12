@@ -128,7 +128,7 @@ export default class HTMLFormatter {
 
     private static createUpdatableLink(text: string, url: string, update: boolean = false): string {
         const replaceCallback = 'var self=this;xhttp.onreadystatechange=function(){if(xhttp.readyState==4){console.log(\'done\');if(xhttp.responseText!=\'\'){self.outerHTML=xhttp.responseText;}}};';
-        return '<a href="#" onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
+        return '<a onclick="console.log(\'clicked\');xhttp=new XMLHttpRequest();xhttp.open(\'GET\', \'' + url + '\', true);' + (update ? replaceCallback : '') + 'xhttp.send();" >' + text + '</a>';
     }
 
     private static bold(text: string): string {
