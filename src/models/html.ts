@@ -210,19 +210,19 @@ export default class HTMLFormatter {
                 const control = ((value.type == 'animated_gif') ? this.autoplayControl : this.videoControl);
                 const variants: any[] = value.video_info.variants;
                 if (variants.length != 0) {
-                    mediaStr += '<video width="340" poster="' + value.media_url_https + '" ' + control + '>';
+                    mediaStr += '<details><summary>[video]</summary><video width="340" poster="' + value.media_url_https + '" ' + control + '>';
                     variants.filter((video, index, array) => { 
                         return (video.content_type as string).startsWith("video"); 
                     }).forEach((video, index, array) => {
                         mediaStr += '<source src="' + video.url + '" type="' + video.content_type + '"/>';
                     });
-                    mediaStr += '</video>';
+                    mediaStr += '</video></details>';
                     return mediaStr;
                 }
             }
             // not video, use image
             var linkImage = this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', this.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
-            var imgUrl = '<details><summary>' + value.media_url_https + '</summary>' + linkImage + '</details>';
+            var imgUrl = '<details><summary>[image]</summary>' + linkImage + '</details>';
             return imgUrl;
         }).join(' ');
         if (mediaStr != '') {
