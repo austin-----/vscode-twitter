@@ -221,7 +221,9 @@ export default class HTMLFormatter {
                 }
             }
             // not video, use image
-            return this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', this.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
+            var linkImage = this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', this.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
+            var imgUrl = '<details><summary>' + value.media_url_https + '</summary>' + linkImage + '</details>';
+            return imgUrl;
         }).join(' ');
         if (mediaStr != '') {
             result += '<p>' + mediaStr + '</p>';
