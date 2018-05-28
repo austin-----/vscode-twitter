@@ -35,6 +35,10 @@ export default class HTMLFormatter {
         return configuration.get('nomedia', false);
     }
 
+    private static get folderImage(): boolean {
+        var configuration = vscode.workspace.getConfiguration('twitter');
+        return configuration.get('folderimage', false);
+    }
     private static get autoPlay(): boolean {
         var configuration = vscode.workspace.getConfiguration('twitter');
         return configuration.get('autoPlay', true);
@@ -204,13 +208,14 @@ export default class HTMLFormatter {
     private static formatMedia(media: any[], quoted: boolean): string {
         var result = '';
         const size = quoted ? ':thumb' : ':small';
+        const open = this.folderImage ? '' : 'open';
         var mediaStr = media.map<string>((value, index, array): string => {
             var mediaStr = '';
             if (value.type == 'video' || value.type == 'animated_gif') {
                 const control = ((value.type == 'animated_gif') ? this.autoplayControl : this.videoControl);
                 const variants: any[] = value.video_info.variants;
                 if (variants.length != 0) {
-                    mediaStr += '<details><summary>[video]</summary><video width="340" poster="' + value.media_url_https + '" ' + control + '>';
+                    mediaStr += '<details ' + open + '><summary>[' + value.type + ']</summary><video width="340" poster="' + value.media_url_https + '" ' + control + '>';
                     variants.filter((video, index, array) => { 
                         return (video.content_type as string).startsWith("video"); 
                     }).forEach((video, index, array) => {
@@ -222,7 +227,7 @@ export default class HTMLFormatter {
             }
             // not video, use image
             var linkImage = this.createUpdatableLink('<img src="' + value.media_url_https + size + '"/>', this.imagePrefix + encodeURIComponent(value.media_url_https + ':large'));
-            var imgUrl = '<details><summary>[image]</summary>' + linkImage + '</details>';
+            var imgUrl = '<details ' + open +  '><summary>[' + value.type + ']</summary>' + linkImage + '</details>';
             return imgUrl;
         }).join(' ');
         if (mediaStr != '') {
