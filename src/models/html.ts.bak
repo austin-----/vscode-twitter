@@ -3,7 +3,6 @@ import User from './user';
 import Entity from './entity';
 import {TrailingUrlBehavior} from './entity';
 import {TimelineType} from './timeline';
-import {LocalService, LocalServiceEndpoint} from '../controllers/service';
 import * as vscode from 'vscode';
 import * as querystring from 'querystring';
 
@@ -39,8 +38,6 @@ export default class HTMLFormatter {
         var configuration = vscode.workspace.getConfiguration('twitter');
         return configuration.get('autoPlay', true);
     }
-
-    static service: LocalService;
 
     static get serviceUrl(): string {
         return 'http://localhost:' + this.service.servicePort + '/';

@@ -1,0 +1,40 @@
+<%
+    const barSeparator = '&nbsp;&nbsp;|&nbsp;&nbsp;';
+%>
+
+<% if (type == 'tweet') { %>
+<img src="<%= user.image %>"/>&nbsp;<%- include('linkbutton', {text: user.name, title: '@'+user.screenName, msg:{}}) -%>
+<% } else if (type == 'retweet') { %>
+<%= user.name %>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg:{}}) -%>
+<% } else if (type == 'quoted') { %>
+<strong><%= user.name %></strong>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg:{}}) -%>
+<% } else if (type == 'profile') { %>
+
+<div style="float: left; margin-right: 1em;">
+    <img style="width: 200; height: 200;" src="<%= user.image.replace('_normal', '_400x400') %>"/>
+</div>
+
+<p>
+<span style="font-size: 1.5em;"><strong>
+<a target="_blank" href="<%= 'https://twitter.com/' + user.screenName %>"><%= user.name %></a>
+</strong>
+</span>
+&nbsp;&nbsp;<%= '@' + user.screenName %>
+<%- barSeparator -%>
+<%- include('linkbutton', {text: user.follwoing ? 'Following' : '<span class="unfollow">Not Following', title: user.name, msg: {}}) -%>
+</p>
+
+<% if (user.url != null) { %>
+<p><a target="_blank" href="<%= user.url %>"><%= (user.urlEntity != null && user.urlEntity.urls.length > 0) ? user.urlEntity.urls[0].expanded_url : user.url %></a></p>
+<% } %>
+<p> <%= user.description %> </p>
+<p><strong>Location: </strong>&nbsp;<%= user.location %></p>
+<p><strong>Joined: </strong>&nbsp;<%= moment(user.createdAt.replace(/( +)/, ' UTC$1')).format('MMM-DD-YYYY') %></p>
+<p><strong>Tweets: </strong>&nbsp;<%= user.statusesCount %><%- barSeparator -%>
+<strong>Following: </strong>&nbsp;<%= user.friendsCount %><%- barSeparator -%>
+<strong>Followers: </strong>&nbsp;<%= user.followersCount %><%- barSeparator -%>
+<strong>Likes: </strong>&nbsp;<%= user.favouritesCount %></p>             
+<div style="clear: both;">&nbsp;</div>
+<hr/>
+
+<% } %>

@@ -1,0 +1,29 @@
+<%
+    const spaceSeparator = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    const retweetSymbol = '\u267A';
+    const heartSymbol = '\u2661';
+    const replySymbol = 'Reply';
+%>
+<div>
+
+<% if (tweet.retweetedStatus) { %>
+<p> <%= retweetSymbol %> <%- include('user', {user:tweet.user, quoted, type: 'retweet'}) -%> Retweeted</p>
+<%- include('tweet', {tweet: tweet.retweetedStatus, quoted, moment}) -%>
+<% } else { %>
+
+<%- include('tweetcontent', {tweet, quoted, moment}) -%>
+
+<% if (tweet.quoted != null) { %>
+<%- include('tweetcontent', {tweet: tweet.quoted, quoted: true, moment}) -%>
+<% } %>
+
+<p>
+<%- include('linkbutton', {text: replySymbol, msg: {}}) -%>
+<%- spaceSeparator %>
+<span class="<%= tweet.retweeted ? 'retweeted' : '' %>"><%- include('linkbutton', {text: retweetSymbol + (tweet.retweetCount == 0 ? '' : ' ' + tweet.retweetCount + ' '), msg: {}}) -%></span>
+<%- spaceSeparator %>
+<span class="<%= tweet.linked ? 'liked' : '' %>"><%- include('linkbutton', {text: heartSymbol + (tweet.likeCount == 0 ? '' : ' ' + tweet.likeCount + ' '), msg: {}}) -%></span>
+</p>
+</div>
+<hr/>
+<% } %>

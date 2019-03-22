@@ -1,9 +1,5 @@
 import * as vscode from 'vscode'
-import * as os from 'os'
-import * as fs from 'fs'
-import {join} from 'path';
 import Tweet from './models/tweet';
-import HTMLFormatter from './models/html';
 
 var Twitter = require('twitter');
 
@@ -24,8 +20,9 @@ export default class TwitterClient {
     };
     
     static get(endpoint: string, params: any): Thenable<any> {
+        params.tweet_mode = 'extended';
         return new Promise((resolve, reject) => {
-            TwitterClient.client.get(endpoint, params, function(error: any[], items: any, response) {
+            TwitterClient.client.get(endpoint, params, function(error: any[], items: any) {
                 if (!error) {
                     resolve(items);
                 } else {
@@ -33,7 +30,7 @@ export default class TwitterClient {
                     if (!(error instanceof Array)) {
                         error = [error];
                     }
-                    var msg = error.map((value, index, array) => { return value.message; }).join('; ');
+                    var msg = error.map((value) => { return value.message; }).join('; ');
                     reject(msg);
                 }
             });
@@ -48,9 +45,9 @@ export default class TwitterClient {
                 console.log(trends);
                 try {
                     const trendsArray: any[] = trends[0].trends;
-                    resolve(trendsArray.map((value, index, array) => { const volume = value.tweet_volume ? ' ' + value.tweet_volume + ' ' + '\u2605'.repeat(Math.log(value.tweet_volume)) : ' new'; return { label: value.name, description: volume, query: value.query }; }));
+                    resolve(trendsArray.map((value) => { const volume = value.tweet_volume ? ' ' + value.tweet_volume + ' ' + '\u2605'.repeat(Math.log(value.tweet_volume)) : ' new'; return { label: value.name, description: volume, query: value.query }; }));
                 } catch (ex) {
-                    resolve('');
+                    resolve(['']);
                 }
             }, (error) => {
                 reject(error);
@@ -64,13 +61,13 @@ export default class TwitterClient {
             payload.in_reply_to_status_id = inReplyToId;
         }
 		return new Promise((resolve, reject) => {
-			TwitterClient.client.post('statuses/update', payload, function(error, data, response) {
+			TwitterClient.client.post('statuses/update', payload, function(error, data) {
 				if (!error) {
 					console.log(data);
 					resolve('OK');
 				} else {
 					console.error(error);
-					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					var msg = error.map((value) => { return value.message; }).join(';');
 					reject(msg);
 				}
 			});
@@ -84,13 +81,13 @@ export default class TwitterClient {
     static like(id: string, unlike: boolean): Thenable<string> {
         const action = (unlike ? 'destroy' : 'create');
         return new Promise((resolve, reject) => {
-            TwitterClient.client.post('favorites/' + action, {id: id, include_entities: false}, function(error, tweet, response){
+            TwitterClient.client.post('favorites/' + action, {id: id, include_entities: false}, function(error, tweet){
                 if (!error) {
                     const t = Tweet.fromJson(tweet);
-                    resolve(HTMLFormatter.formatLike(t));
+                    resolve(JSON.stringify(t));
                 } else {
                     console.error(error);
-					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					var msg = error.map((value) => { return value.message; }).join(';');
 					reject(msg);
                 }
             });
@@ -99,13 +96,13 @@ export default class TwitterClient {
     
     static retweet(id: string): Thenable<string> {
         return new Promise((resolve, reject) => {
-            this.client.post('statuses/retweet', {id: id}, function(error, tweet, response){
+            this.client.post('statuses/retweet', {id: id}, function(error, tweet){
                 if (!error) {
                     const t = Tweet.fromJson(tweet);
-                    resolve(HTMLFormatter.formatRetweet(t));
+                    resolve(JSON.stringify(t));
                 } else {
                     console.error(error);
-					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					var msg = error.map((value) => { return value.message; }).join(';');
 					reject(msg);
                 }
             });
@@ -115,12 +112,12 @@ export default class TwitterClient {
     static follow(screenName: string, unfollow: boolean) {
         const action = (unfollow ? 'destroy' : 'create');
         return new Promise((resolve, reject) => {
-            TwitterClient.client.post('friendships/' + action, {screen_name: screenName}, function(error, tweet, response){
+            TwitterClient.client.post('friendships/' + action, {screen_name: screenName}, function(error){
                 if (!error) {
-                    resolve(HTMLFormatter.formatFollow(!unfollow, screenName));
+                    resolve('');
                 } else {
                     console.error(error);
-					var msg = error.map((value, index, array) => { return value.message; }).join(';');
+					var msg = error.map((value) => { return value.message; }).join(';');
 					reject(msg);
                 }
             });

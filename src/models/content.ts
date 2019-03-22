@@ -1,16 +1,22 @@
 import * as vscode from 'vscode';
 import * as timeline from './timeline';
 import * as querystring from 'querystring';
+import WebView from '../views/webview';
 
 export default class TwitterTimelineContentProvider implements vscode.TextDocumentContentProvider {
 
     private segments: string[] = [];
     private types: timeline.TimelineType[] = [];
     static schema: string = 'twitter';
-    private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+    private context: vscode.ExtensionContext;
+
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+    }
 
     provideTextDocumentContent(uri: vscode.Uri): Thenable<string> {
         console.log('Ask for content: ' + uri.toString());
+        const self = this;
         const getNew = uri.fragment != 'false';
         var index = this.segments.findIndex((value) => (uri.authority + uri.path).startsWith(value));
         if (index != null) {
@@ -21,21 +27,12 @@ export default class TwitterTimelineContentProvider implements vscode.TextDocume
                 } else {
                     var tl = timeline.TimelineFactory.getTimeline(type, uri.query);
                     if (tl != null) {
-                        return tl.getHTML();
+                        return tl.getData().then(data => { return WebView.GetWebViewContent(self.context, type, data); });
                     }
                 }
             }
         }
         return Promise.resolve('Invalid uri ' + uri.toString());
-    }
-
-    get onDidChange(): vscode.Event<vscode.Uri> {
-        return this._onDidChange.event;
-    }
-
-    public update(uri: vscode.Uri) {
-        console.log('Document update with uri: ' + uri);
-        this._onDidChange.fire(uri);
     }
 
     addHandler(segment: string, type: timeline.TimelineType) {

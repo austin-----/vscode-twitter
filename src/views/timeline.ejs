@@ -1,0 +1,35 @@
+<%
+    const refreshSymbol = '\u21BB';
+%>
+
+<html>
+    <head>
+        <!--link rel="stylesheet" href="https://raw.githubusercontent.com/Microsoft/vscode/master/extensions/markdown/media/markdown.css" type="text/css" media="screen"-->
+        <style>
+            *{font-size: inherit;} 
+            h1{font-size: 2em;} 
+            span.liked{color: red;} 
+            span.retweeted{color: green;} 
+            span.unfollow{color: red;}
+        </style>
+    </head>
+        
+    <body>
+        <div style="padding-right:16px;">
+            <h1><%= title %>&nbsp;<%- include('linkbutton', {text: refreshSymbol, msg: {}}) -%>&nbsp;&nbsp; 
+                <span style = "font-size:0.5em;">Last updated at <%= moment().format('h:mm A, MMM D, YYYY') %></span>
+            </h1>
+            <% if (type == 'user' || type == 'other') { %>
+            <div id = "user">
+                <%- include('user', {user, quoted: false, type: 'profile', moment}) -%>
+            </div>
+            <% } %>
+            <div id = "tweets">
+            <% tweets.forEach(tweet => { %>
+            <%- include('tweet', {tweet, quoted: false, moment}) -%>
+            <% }) %>
+            </div>
+            <center><h1> Load More</h1></center>
+        </div>
+    </body>
+</html>

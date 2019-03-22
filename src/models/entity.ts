@@ -1,10 +1,11 @@
 import * as punycode from 'punycode';
 
-enum EntityType {
-    UserMention = 1,
-    HashTag,
-    Symbol,
-    Url
+export enum EntityType {
+    Text = 'text',
+    UserMention = 'userMention',
+    HashTag = 'hashTag',
+    Symbol = 'symbol',
+    Url = 'url'
 }
 
 export interface Handler {
@@ -17,14 +18,15 @@ export enum TrailingUrlBehavior {
     Urlify
 }
 
-export default class Entity {
+export class Entity {
     media: any[];
     userMentions: any[];
     hashTags: any[];
     symbols: any[];
     urls: any[];
+    static urlReg = /(.*\b)(https\:\/\/t\.co\/[0-9a-zA-Z]+)$/;
     
-    processText(text: string, trailingUrlBehavior: TrailingUrlBehavior, mentionHandler: Handler, hashTagHandler: Handler, symbolHandler: Handler, urlHandler: Handler): string {
+    processText(text: string, trailingUrlBehavior: TrailingUrlBehavior): [EntityType, any][] {
         var normalized: number[] = <any>punycode.ucs2.decode(text);
 
         var indexArray: any[] = [];
@@ -48,51 +50,50 @@ export default class Entity {
 
         indexArray.sort((a, b) => { return a.i0 - b.i0; });
 
-        var processed = '';
+        var result = [];
         var last = 0;
         indexArray.forEach((value, index, array) => {
-            processed += punycode.ucs2.encode(normalized.slice(last, value.i0));
+            if (value.i0 > last) {
+                result.push([EntityType.Text, {text: punycode.ucs2.encode(normalized.slice(last, value.i0))}]);
+            }
+             
             var token = punycode.ucs2.encode(normalized.slice(value.i0, value.i1));
             switch (value.type) {
                 case EntityType.UserMention:
-                    token = mentionHandler(token, value.tag.screen_name);
+                    result.push([value.type, {text: token, name: value.tag.screen_name}]);
                     break;
                 case EntityType.HashTag:
-                    token = hashTagHandler(token, value.tag.text);
+                    result.push([value.type, {text: token, tag: value.tag.text}]);
                     break;
                 case EntityType.Symbol:
-                    token = symbolHandler(token, '$' + value.tag.text);
+                    result.push([value.type, {text: token, symbol: value.tag.text}]);
                     break;
                 case EntityType.Url:
-                    token = urlHandler(value.tag.display_url, value.tag.url);
+                    result.push([value.type, {text: value.tag.display_url, url: value.tag.url}]);
                     break;
             }
-            processed += token;
+            
             last = value.i1;
         });
 
-        processed += punycode.ucs2.encode(normalized.slice(last));
-        
-        if (trailingUrlBehavior != TrailingUrlBehavior.NoChange) {
-            if (this.media != null && this.media.length > 0) {
-                processed = Entity.replaceTrailingUrl(processed, trailingUrlBehavior == TrailingUrlBehavior.Remove ? (url) => {return '';} : (url) => {return urlHandler(url, url);});
+        var trailingText = punycode.ucs2.encode(normalized.slice(last));
+        if (trailingText.length > 0) {
+            if (trailingUrlBehavior != TrailingUrlBehavior.NoChange) {
+                var parts = trailingText.match(Entity.urlReg);
+                if (parts != null && parts.length == 3) {
+                    result.push([EntityType.Text, {text: parts[1]}]);
+                    if (trailingUrlBehavior != TrailingUrlBehavior.Remove) {
+                        result.push([EntityType.Url, {text: parts[2], url: parts[2]}]);
+                    }
+                } else {
+                    result.push([EntityType.Text, {text: trailingText}]);
+                }
+            } else {
+                result.push([EntityType.Text, {text: trailingText}]);
             }
         }
         
-        var result = processed;
         return result;
-    }
-    
-    static replaceTrailingUrl(content: string, replace: (string) => string): string {
-        const urlReg = /\bhttps\:\/\/t\.co\/[0-9a-zA-Z]+$/;
-        const trailingUrls = content.match(urlReg);
-        if (trailingUrls != null && trailingUrls.length == 1) {
-            const url = trailingUrls[0];
-            content = content.replace(url, replace(url));
-            return content;
-        } else {
-            return content;
-        }
     }
     
     static fromJson(entityJson: any, extendedEntityJson: any): Entity {

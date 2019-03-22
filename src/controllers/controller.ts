@@ -1,22 +1,19 @@
 import * as events from 'events';
 import * as vscode from 'vscode';
-import * as https from 'https';
 import TwitterClient from '../twitter';
 import Wizard from '../wizard';
 import View from '../views/view';
-import Tweet from '../models/tweet';
 import * as timeline from '../models/timeline';
 import TwitterTimelineContentProvider from '../models/content';
 import * as querystring from 'querystring';
-import {LocalService, LocalServiceEndpoint} from './service';
-import HTMLFormattr from '../models/html';
+import {WebViewController} from './webviewcontroller';
 
 export default class MainController implements vscode.Disposable {
     private extensionContext: vscode.ExtensionContext;
     private event: events.EventEmitter = new events.EventEmitter();
     private view: View;
-    private contentProvider: TwitterTimelineContentProvider = new TwitterTimelineContentProvider();
-    private service: LocalService = new LocalService();
+    private contentProvider: TwitterTimelineContentProvider;
+    private webviewController: WebViewController;
 
     static CmdStart: string = 'twitter.start';
     static CmdPost: string = 'twitter.post';
@@ -28,6 +25,14 @@ export default class MainController implements vscode.Disposable {
     constructor(context: vscode.ExtensionContext, view: View) {
         this.extensionContext = context;
         this.view = view;
+        this.contentProvider = new TwitterTimelineContentProvider(context);
+        this.webviewController = new WebViewController(this.contentProvider, view);
+    }
+
+    private openTimelineOfType(type: timeline.TimelineType, param?: string) {
+        console.log('Opening timeline ' + timeline.TimelineType[type]);
+        var uri = this.contentProvider.getUri(type, param == null ? null : querystring.escape(param));
+        this.webviewController.openTimeline('Opening timeline ' + timeline.TimelineType[type] + ' ...', uri);
     }
 
     private registerCommand(command: string) {
@@ -37,51 +42,16 @@ export default class MainController implements vscode.Disposable {
         }));
     }
 
-    private openTimeline(message: string, uri: vscode.Uri) {
-        const self = this;
-        vscode.window.setStatusBarMessage(message,
-            vscode.commands.executeCommand('vscode.previewHtml', uri).then((success) => { },
-                (reason) => {
-                    vscode.window.showErrorMessage(reason);
-                })
-        );
-    }
-    
-    private openTimelineOfType(type: timeline.TimelineType, param?: string) {
-        console.log('Opening timeline ' + timeline.TimelineType[type]);
-        var uri = this.contentProvider.getUri(type, param == null ? null : querystring.escape(param));
-        this.openTimeline('Opening timeline ' + timeline.TimelineType[type] + ' ...', uri);
-    }
-
-    private openSearchTimeline(value: string) {
-        console.log('Searching for ' + value);
-        var uri = this.contentProvider.getUri(timeline.TimelineType.Search, querystring.escape(value));
-        this.openTimeline('Searching for ' + value + ' ...', uri);
-    }
-
-    private openOtherUserTimeline(value: string) {
-        console.log('Searching for @' + value);
-        var uri = this.contentProvider.getUri(timeline.TimelineType.OtherUser, querystring.escape(value));
-        this.openTimeline('Searching for @' + value + ' ...', uri);
-    }
-
-    private openImage(url: string) {
-        console.log('Opening image ' + url);
-        const uri = this.contentProvider.getUri(timeline.TimelineType.Image, querystring.escape(url));
-        this.openTimeline('Opening image ' + url + ' ...', uri);
-    }
-
     private twitterSearchInternal() {
         const self = this;
         this.view.showSearchInputBox().then(value => {
             if (value) {
-                self.openSearchTimeline(value);
+                self.webviewController.openSearchTimeline(value);
             }
         });
     }
 
     private onTwitterSearch() {
-        const self = this;
         Wizard.checkConfigurationAndRun(() => { this.twitterSearchInternal(); });
     }
 
@@ -90,25 +60,10 @@ export default class MainController implements vscode.Disposable {
             if (value) {
                 console.log("Posting... " + value);
                 vscode.window.setStatusBarMessage('Posting status...',
-                    TwitterClient.post(value).then(result => {
+                    TwitterClient.post(value).then(() => {
                         vscode.window.showInformationMessage('Your status was posted.');
                     }, (error) => {
                         vscode.window.showErrorMessage('Failed to post the status: ' + error);
-                    })
-                );
-            }
-        });
-    }
-
-    private twitterReplyInternal(id: string, user: string) {
-        this.view.showReplyInputBox(user).then(content => {
-            if (content) {
-                console.log("Replying... " + content);
-                vscode.window.setStatusBarMessage('Replying status...',
-                    TwitterClient.reply(content, id).then(result => {
-                        vscode.window.showInformationMessage('Your reply was posted.');
-                    }, (error) => {
-                        vscode.window.showErrorMessage('Failed to reply: ' + error);
                     })
                 );
             }
@@ -129,7 +84,7 @@ export default class MainController implements vscode.Disposable {
         TwitterClient.getTrends().then(trend => {
             vscode.window.showQuickPick(trend, { matchOnDescription: true, placeHolder: 'Select a Trend' }).then(value => {
                 if (value) {
-                    self.openSearchTimeline(decodeURIComponent(value.query));
+                    self.webviewController.openSearchTimeline(decodeURIComponent(value.query));
                 }
             });
         }, error => {
@@ -181,8 +136,6 @@ export default class MainController implements vscode.Disposable {
         Wizard.checkConfigurationAndRun(() => { self.twitterTimelineInternal(); });
     }
 
-    
-
     activate() {
         const self = this;
 
@@ -209,120 +162,6 @@ export default class MainController implements vscode.Disposable {
         this.event.on(MainController.CmdTrend, () => { self.onTwitterTrend(); });
 
         this.view.activate();
-        
-        this.service.addHandler('/search/:q', LocalServiceEndpoint.Search, function(req, res) {
-            res.send('Searching for ' + req.params.q);
-            self.openSearchTimeline(req.params.q);
-        });
-        
-        this.service.addHandler('/user/:screen_name', LocalServiceEndpoint.User, function(req, res) {
-            res.send('Searching for @' + req.params.screen_name);
-            self.openOtherUserTimeline(req.params.screen_name);
-        });
-        
-        this.service.addHandler('/image/:img', LocalServiceEndpoint.Image, function(req, res) {
-            const image = decodeURIComponent(req.params.img);
-            res.send('Opening image ' + image);
-            self.openImage(image);
-        });
-        
-        this.service.addHandler('/refresh/:getnew/:type/:query?', LocalServiceEndpoint.Refresh, function(req, res) {
-            res.send('Refreshing ' + req.params.getnew);
-            console.log('Refreshing ' + req.params.getnew);
-            const type = parseInt(req.params.type);
-            const uri = self.contentProvider.getUri(type, req.params.query == null ? null : querystring.escape(req.params.query));
-            const tl = timeline.TimelineFactory.getTimeline(type, uri.query);
-            tl.getNew = req.params.getnew != 'false';
-            self.contentProvider.update(uri);
-        });
-        
-        this.service.addHandler('/reply/:id/:user', LocalServiceEndpoint.Reply, function(req, res) {
-            res.send('');
-            self.twitterReplyInternal(req.params.id, req.params.user);
-        });
-        
-        this.service.addHandler('/retweet/:id/:url/:brief', LocalServiceEndpoint.Retweet, function(req, res) {
-            vscode.window.showInformationMessage('Would you like to Retweet or Comment?', 'Comment', 'Retweet').then(select => {
-                if (select == 'Retweet') {
-                    TwitterClient.retweet(req.params.id).then(content => {
-                        res.send(content);
-                    }, (error: string) => {
-                        vscode.window.showErrorMessage('Failed to retweet: ' + error);
-                        res.send('');
-                    });
-                } else {
-                    res.send('');
-                    if (select == 'Comment') {
-                        const url = querystring.unescape(req.params.url);
-                        const brief = querystring.unescape(req.params.brief);
-                        self.view.showCommentInputBox(brief + '...').then(content => {
-                            if (content) {
-                                TwitterClient.post(content + ' ' + url).then(content => {
-                                    vscode.window.showInformationMessage('Your comment was posted.');
-                                }, (error: string) => {
-                                    vscode.window.showErrorMessage('Failed to post comment: ' + error);
-                                });
-                            }
-                        });
-                    }
-                }
-            });
-        });
-        
-        this.service.addHandler('/like/:id', LocalServiceEndpoint.Like, function(req, res) {
-            TwitterClient.like(req.params.id, false).then(content => {
-                res.send(content);
-            }, (error: string) => {
-                vscode.window.showErrorMessage('Failed to like: ' + error);
-            });
-        });
-        
-        this.service.addHandler('/unlike/:id', LocalServiceEndpoint.Unlike, function(req, res) {
-            TwitterClient.like(req.params.id, true).then(content => {
-                res.send(content);
-            }, (error: string) => {
-                vscode.window.showErrorMessage('Failed to unlike: ' + error);
-            });
-        });
-        
-        this.service.addHandler('/follow/:user', LocalServiceEndpoint.Follow, function(req, res) {
-            TwitterClient.follow(req.params.user, false).then(content => {
-                res.send(content);
-            }, (error: string) => {
-                vscode.window.showErrorMessage('Failed to follow: ' + error);
-            });
-        });
-        
-        this.service.addHandler('/unfollow/:user', LocalServiceEndpoint.Unfollow, function(req, res) {
-            TwitterClient.follow(req.params.user, true).then(content => {
-                res.send(content);
-            }, (error: string) => {
-                vscode.window.showErrorMessage('Failed to unfollow: ' + error);
-            });
-        });
-
-        this.service.addHandler('/css', LocalServiceEndpoint.Css, function(req, res) {
-            https.get('https://raw.githubusercontent.com/Microsoft/vscode/master/extensions/markdown/media/markdown.css', function(message) {
-                var content = "";
-                message.on('data', function(chunk){
-                    content += chunk;
-                });
-                message.on('end', function(){
-                    res.setHeader('Content-Type', 'text/css');
-                    res.send(content);
-                });
-                message.resume();
-            });
-        });
-
-        var configuration = vscode.workspace.getConfiguration('twitter');
-        var port = configuration.get<number>('localServicePort')
-        try {
-            this.service.start();
-            HTMLFormattr.service = this.service;
-        } catch (error) {
-            vscode.window.showErrorMessage('Twitter local service failed to listen on port ' + port);
-        }
     }
 
     deactivate() {
@@ -331,6 +170,7 @@ export default class MainController implements vscode.Disposable {
 
     dispose() {
         this.deactivate();
+        this.webviewController.dispose();
         this.view.dispose();
     }
 }

@@ -1,0 +1,43 @@
+<%
+    const dotSeparator = ' \u2022 ';
+%>
+
+<% if (quoted) { %> 
+<blockquote>
+<% } %>
+
+<p>
+<%- include('user', {user: tweet.user, quoted, type: quoted ? 'quoted' : 'tweet'}) -%> 
+<% if (!quoted) {%>
+<%= dotSeparator %> <%= moment(tweet.created.replace(/( +)/, ' UTC$1')).fromNow() %> 
+<% } %>
+&nbsp;(<a href="<%= 'https://twitter.com/' + tweet.user.screenName + '/status/' + tweet.id %>">Details</a>)
+</p>
+
+<p>
+<% tweet.parsedText.forEach(part => { %>
+
+<% if (part[0] == 'userMention') { %>
+<%- include('linkbutton', {text: part[1].text, msg: {}}) -%>
+<% } else if (part[0] == 'hashTag') { %>
+<%- include('linkbutton', {text: part[1].text, msg: {}}) -%>
+<% } else if (part[0] == 'symbol') { %>
+<%- include('linkbutton', {text: '$' + part[1].text, msg: {}}) -%>
+<% } else if (part[0] == 'url') { %>
+<a target="_blank" href="<%= part[1].url %>"><%= part[1].text %></a>
+<% } else { %>
+<%= part[1].text %>
+<% } %>
+
+<% }) %>
+</p>
+
+<p>
+<% if (tweet.entity.media != null) { %>
+<%- include('media', {media: tweet.entity.media, quoted}) -%>
+<% } %>
+</p>
+
+<% if (quoted) { %>
+</blockquote>
+<% } %>

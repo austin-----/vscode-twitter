@@ -1,24 +1,21 @@
-import * as vscode from 'vscode';
 import Tweet from '../models/tweet';
 import User from '../models/user';
 import TwitterClient from '../twitter';
-import HTMLFormatter from './html';
-import {UserFormatPosition} from './html';
 
 export enum TimelineType {
-    Home = 1,
-    User,
-    Mentions,
-    OtherUser,
-    Search,
-    Post,
-    Trend,
-    Image
+    Home = 'home',
+    User = 'user',
+    Mentions = 'mentions',
+    OtherUser = 'other',
+    Search = 'search',
+    Post = 'post',
+    Trend = 'trend',
+    Image = 'image'
 }
 
 export interface Timeline {
     getNew: boolean;
-    getHTML(): Thenable<string>;
+    getData(): Thenable<any>;
 }
 
 export class TimelineFactory {
@@ -40,7 +37,7 @@ export class TimelineFactory {
                 break;
             case TimelineType.OtherUser:
                 if (param != null) {
-                    timeline = this.otherUserTimelineList.find((v, i, a) => { return v.query == param; });
+                    timeline = this.otherUserTimelineList.find((v) => { return v.query == param; });
                     if (timeline == null)
                     {
                         console.log('create new other user timeline for ' + param);
@@ -54,7 +51,7 @@ export class TimelineFactory {
                 break;
             case TimelineType.Search:
                 if (param != null) {
-                    timeline = this.searchTimelineList.find((v, i, a) => { return v.query == param; });
+                    timeline = this.searchTimelineList.find((v) => { return v.query == param; });
                     if (timeline == null)
                     {
                         console.log('create new search timeline for ' + param);
@@ -72,7 +69,6 @@ export class TimelineFactory {
 }
 
 abstract class BaseTimeline implements Timeline {
-    refreshInProgress: boolean = false;
     type: TimelineType;
     query: string;
 
@@ -86,7 +82,7 @@ abstract class BaseTimeline implements Timeline {
     title: string;
     getNew: boolean = true;
 
-    getTweets(): Thenable<string> {
+    getTweets(): Thenable<void> {
         console.log('getTweets: ' + this.getNew);
         const self = this;
         var params: any = Object.assign({}, this.params);
@@ -98,51 +94,47 @@ abstract class BaseTimeline implements Timeline {
             params.max_id = this.maxId;
         }
 
-        return new Promise((resolve, reject) => {
-            TwitterClient.get(self.endpoint, params).then((tweets: any) => {
-                if (!(tweets instanceof Array)) {
-                    tweets = tweets.statuses;
-                };
+        return TwitterClient.get(self.endpoint, params).then((tweets: any) => {
+            if (!(tweets instanceof Array)) {
+                tweets = tweets.statuses;
+            };
 
+            if (this.getNew) {
+                tweets = tweets.reverse();
+            } else {
+                // older tweet has a duplicate entry
+                tweets.shift();
+            }
+
+            tweets.forEach((value) => {
                 if (this.getNew) {
-                    tweets = tweets.reverse();
-                } else {
-                    // older tweet has a duplicate entry
-                    tweets.shift();
-                }
-
-                tweets.forEach((value, index, array) => {
-                    if (this.getNew) {
-                        // don't cache more than 1000 tweets
-                        if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
-                            self.tweets.pop();
-                        }
-                        while (self.tweets.length > 1000) {
-                            self.tweets.pop();
-                        }
-                    } else {
-                        // don't remove newer tweets
-                        self.tweets.push(Tweet.fromJson(value));
+                    // don't cache more than 1000 tweets
+                    if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
+                        self.tweets.pop();
                     }
-                });
-
-                self.maxId = self.tweets[self.tweets.length - 1].id;
-                self.sinceId = self.tweets[0].id;
-                var result = HTMLFormatter.formatTweets(self.tweets);
-                resolve(result);
-            }, (error) => {
-                reject(error);
+                    while (self.tweets.length > 1000) {
+                        self.tweets.pop();
+                    }
+                } else {
+                    // don't remove newer tweets
+                    self.tweets.push(Tweet.fromJson(value));
+                }
             });
+
+            self.maxId = self.tweets[self.tweets.length - 1].id;
+            self.sinceId = self.tweets[0].id;
         });
     }
 
-    getHTML(): Thenable<string> {
-        return new Promise((resolve, reject) => {
-            const self = this;
-            this.getTweets().then((value) => {
-                var result = HTMLFormatter.formatTimeline(self.title, self.type, self.query, '', value);
-                resolve(result);
-            }, (error) => { reject(error); });
+    getData(): Thenable<any> {
+        const self = this;
+        return this.getTweets().then(() => {
+            return {
+                title: self.title,
+                type: self.type,
+                query: self.query,
+                tweets: self.tweets
+            };
         });
     }
 
@@ -203,17 +195,19 @@ class UserTimeline extends BaseTimeline {
         return new UserTimeline();
     }
     
-    getHTML(): Thenable<string> {
-        return new Promise((resolve, reject) => {
-            const self = this;
-            this.getTweets().then((value) => {
-                TwitterClient.get(self.profileEndPoint, { include_entities: true }).then((user) => {
-                    var userProfile = User.fromJson(user);
-                    var description = HTMLFormatter.formatUser(userProfile, UserFormatPosition.Profile);
-                    var result = HTMLFormatter.formatTimeline(self.title, self.type, self.query, description, value);
-                    resolve(result);
-                }, (error) => { reject(error); });
-            }, (error) => { reject(error); });
+    getData(): Thenable<any> {
+        const self = this;
+        return this.getTweets().then(() => {
+            return TwitterClient.get(self.profileEndPoint, { include_entities: true }).then((user) => {
+                var userProfile = User.fromJson(user);
+                return {
+                    title: self.title,
+                    type: self.type,
+                    query: self.query,
+                    tweets: self.tweets,
+                    user: userProfile
+                };
+            })
         });
     }
 }
@@ -231,18 +225,20 @@ class OtherUserTimeline extends BaseTimeline {
         this.params.screen_name = screenName;
     }
 
-    getHTML(): Thenable<string> {
-        return new Promise((resolve, reject) => {
-            const self = this;
-            console.log('OtherUsertimeline: getNew ' + this.getNew);
-            this.getTweets().then((value) => {
-                TwitterClient.get(self.profileEndPoint, { screen_name: self.query, include_entities: true }).then((user) => {
-                    var userProfile = User.fromJson(user);
-                    var description = HTMLFormatter.formatUser(userProfile, UserFormatPosition.Profile);
-                    var result = HTMLFormatter.formatTimeline(self.title, self.type, self.query, description, value);
-                    resolve(result);
-                }, (error) => { reject(error); });
-            }, (error) => { reject(error); });
+    getData(): Thenable<any> {
+        const self = this;
+        console.log('OtherUsertimeline: getNew ' + this.getNew);
+        return this.getTweets().then(() => {
+            return TwitterClient.get(self.profileEndPoint, { screen_name: self.query, include_entities: true }).then((user) => {
+                var userProfile = User.fromJson(user);
+                return {
+                    title: self.title,
+                    type: self.type,
+                    query: self.query,
+                    tweets: self.tweets,
+                    user: userProfile
+                };
+            })
         });
     }
 }
@@ -261,11 +257,11 @@ class SearchTimeline extends BaseTimeline {
         this.keyword = keyword;
     }
 
-    parentGetNew(): Thenable<string> {
+    parentGetNew(): Thenable<void> {
         return super.getTweets();
     }
 
-    getTweets(): Thenable<string> {
+    getTweets(): Thenable<void> {
         const self = this;
 
         var params = Object.assign({}, this.params);
@@ -279,22 +275,14 @@ class SearchTimeline extends BaseTimeline {
         params.q = this.keyword;
         params.include_entities = false;
 
-        return new Promise((resolve, reject) => {
-            TwitterClient.get(self.searchEndPoint, params).then((tweets: any) => {
-                if (!(tweets instanceof Array)) {
-                    tweets = tweets.statuses;
-                };
-                self.params.id = (<any[]>tweets).map<string>((value, index, array): string => { return value.id_str; }).join(',');
-                console.log('Search results: ' + self.params.id);
-                self.params.include_entities = true;
-                self.parentGetNew().then(value => {
-                    resolve(value);
-                }, error => {
-                    reject(error);
-                });
-            }, (error) => {
-                reject(error);
-            });
+        return TwitterClient.get(self.searchEndPoint, params).then((tweets: any) => {
+            if (!(tweets instanceof Array)) {
+                tweets = tweets.statuses;
+            };
+            self.params.id = (<any[]>tweets).map<string>((value): string => { return value.id_str; }).join(',');
+            console.log('Search results: ' + self.params.id);
+            self.params.include_entities = true;
+            return self.parentGetNew();
         });
     }
 }

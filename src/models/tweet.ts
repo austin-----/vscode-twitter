@@ -1,6 +1,5 @@
-import * as vscode from 'vscode';
 import User from './user';
-import Entity from './entity';
+import {TrailingUrlBehavior, EntityType, Entity} from './entity';
 
 export default class Tweet {
     id: string;
@@ -14,6 +13,7 @@ export default class Tweet {
     likeCount: number;
     liked: boolean;
     user: User;
+    parsedText: [EntityType, any][];
 
     constructor(id: string, created: string, text: string, user:User, retweetCount: number, retweeted: boolean, likeCount: number, liked: boolean) {
         this.id = id;
@@ -29,7 +29,7 @@ export default class Tweet {
     static fromJson(tweetJson: any): Tweet {
         var user = User.fromJson(tweetJson.user);
         
-        var tweet = new Tweet(tweetJson.id_str, tweetJson.created_at, tweetJson.text, user, tweetJson.retweet_count, tweetJson.retweeted, tweetJson.favorite_count, tweetJson.favorited);
+        var tweet = new Tweet(tweetJson.id_str, tweetJson.created_at, tweetJson.full_text, user, tweetJson.retweet_count, tweetJson.retweeted, tweetJson.favorite_count, tweetJson.favorited);
         if (tweetJson.quoted_status) {
             tweet.quoted = Tweet.fromJson(tweetJson.quoted_status);
         }
@@ -39,6 +39,8 @@ export default class Tweet {
         }
 	    
         tweet.entity = Entity.fromJson(tweetJson.entities, tweetJson.extended_entities);
+        tweet.parsedText = tweet.entity.processText(tweet.text, TrailingUrlBehavior.Remove); //no media: urlify
+
         return tweet;
     }
 }
