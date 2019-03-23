@@ -96,11 +96,17 @@ export class WebViewController implements vscode.Disposable {
             case WebViewCommand.User:
                 this.onCmdUser(args.screenName);
             break;
+            case WebViewCommand.Search:
+                this.onCmdSearch(args.value);
         }
     }
 
     private onCmdUser(screenName: string) {
         this.openOtherUserTimeline(screenName);
+    }
+
+    private onCmdSearch(value: string) {
+        this.openSearchTimeline(value);
     }
 
     /*
