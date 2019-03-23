@@ -10,3 +10,5 @@ vsc-extension-quickstart.md
 screenshots/**
 *.vsix
 webpack.config.json
+node_modules/**
+!node_modules/ejs
