@@ -1,4 +1,4 @@
-import {Entity} from './entity';
+import {EntityType, Entity, TrailingUrlBehavior} from './entity';
 
 export default class User {
     id: string;
@@ -17,6 +17,7 @@ export default class User {
     favouritesCount: number;
     descriptionEntity: Entity;
     urlEntity: Entity;
+    parsedDescription: [EntityType, any][];
     
     constructor(id: string, name: string, screenName: string, image: string, description: string, url: string, statusesCount: number, verified: boolean, following: boolean, location: string, followersCount: number, friendsCount: number, createdAt: string, favoritesCount: number) {
         this.id = id;
@@ -38,6 +39,7 @@ export default class User {
     static fromJson(userJson:any): User {
         var user = new User(userJson.id_str, userJson.name, userJson.screen_name, userJson.profile_image_url_https, userJson.description, userJson.url, userJson.statuses_count, userJson.verified, userJson.following, userJson.location, userJson.followers_count, userJson.friends_count, userJson.created_at, userJson.favourites_count);
         user.descriptionEntity = Entity.fromJson(userJson.entities.description, null);
+        user.parsedDescription = user.descriptionEntity.processText(user.description, TrailingUrlBehavior.Remove);
         user.urlEntity = Entity.fromJson(userJson.entities.url, null);
         return user;
     }

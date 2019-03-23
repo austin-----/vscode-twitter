@@ -14,6 +14,7 @@
     <img style="width: 200; height: 200;" src="<%= user.image.replace('_normal', '_400x400') %>"/>
 </div>
 
+<div>
 <p>
 <span style="font-size: 1.5em;"><strong>
 <a target="_blank" href="<%= 'https://twitter.com/' + user.screenName %>"><%= user.name %></a>
@@ -27,13 +28,16 @@
 <% if (user.url != null) { %>
 <p><a target="_blank" href="<%= user.url %>"><%= (user.urlEntity != null && user.urlEntity.urls.length > 0) ? user.urlEntity.urls[0].expanded_url : user.url %></a></p>
 <% } %>
-<p> <%= user.description %> </p>
+<p>
+<%- include('parsedentities', {parts: user.parsedDescription}) -%>
+</p>
 <p><strong>Location: </strong>&nbsp;<%= user.location %></p>
 <p><strong>Joined: </strong>&nbsp;<%= moment(user.createdAt.replace(/( +)/, ' UTC$1')).format('MMM-DD-YYYY') %></p>
 <p><strong>Tweets: </strong>&nbsp;<%= user.statusesCount %><%- barSeparator -%>
 <strong>Following: </strong>&nbsp;<%= user.friendsCount %><%- barSeparator -%>
 <strong>Followers: </strong>&nbsp;<%= user.followersCount %><%- barSeparator -%>
-<strong>Likes: </strong>&nbsp;<%= user.favouritesCount %></p>             
+<strong>Likes: </strong>&nbsp;<%= user.favouritesCount %></p>
+</div>
 <div style="clear: both;">&nbsp;</div>
 <hr/>
 

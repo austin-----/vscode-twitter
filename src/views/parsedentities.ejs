@@ -1,0 +1,15 @@
+<% parts.forEach(part => { %>
+
+<% if (part[0] == 'userMention') { %>
+<%- include('linkbutton', {text: part[1].text, msg: {cmd:'user', args: {screenName:part[1].text.slice(1)}}}) -%>
+<% } else if (part[0] == 'hashTag') { %>
+<%- include('linkbutton', {text: part[1].text, msg: {cmd:'search', args: {value:part[1].text}}}) -%>
+<% } else if (part[0] == 'symbol') { %>
+<%- include('linkbutton', {text: '$' + part[1].text, msg: {cmd:'search', args: {value:part[1].text}}}) -%>
+<% } else if (part[0] == 'url') { %>
+<a target="_blank" href="<%= part[1].url %>"><%= part[1].text %></a>
+<% } else { %>
+<%= part[1].text %>
+<% } %>
+
+<% }) %>

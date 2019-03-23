@@ -52,10 +52,14 @@ export class WebViewController implements vscode.Disposable {
             var panel = vscode.window.createWebviewPanel(
                 'twitter',
                 uri.fsPath.substr(0, 30),
-                vscode.ViewColumn.Beside,
+                { 
+                    viewColumn: vscode.ViewColumn.Beside,
+                    preserveFocus: true
+                },
                 {
                     enableScripts: true,
-                    retainContextWhenHidden: true
+                    retainContextWhenHidden: true,
+                    enableFindWidget: true
                 }
             );
 
@@ -79,7 +83,7 @@ export class WebViewController implements vscode.Disposable {
 
     openTimeline(message: string, uri: vscode.Uri) {
         vscode.window.setStatusBarMessage(message, 
-            this.getWebViewPanel(uri).then(v => { v.reveal(vscode.ViewColumn.Beside) })
+            this.getWebViewPanel(uri).then(v => { v.reveal(vscode.ViewColumn.Beside, true) })
         );
     }
 
