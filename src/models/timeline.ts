@@ -14,8 +14,7 @@ export enum TimelineType {
 }
 
 export interface Timeline {
-    getNew: boolean;
-    getData(): Thenable<any>;
+    getData(loadNew: boolean): Thenable<any>;
 }
 
 export class TimelineFactory {
@@ -80,17 +79,16 @@ abstract class BaseTimeline implements Timeline {
     endpoint: string = '';
 
     title: string;
-    getNew: boolean = true;
 
-    getTweets(): Thenable<void> {
-        console.log('getTweets: ' + this.getNew);
+    getTweets(loadNew: boolean): Thenable<void> {
+        console.log('getTweets: ' + loadNew);
         const self = this;
         var params: any = Object.assign({}, this.params);
-        if (this.sinceId && this.getNew) {
+        if (this.sinceId && loadNew) {
             params.since_id = this.sinceId;
         }
 
-        if (this.maxId && !this.getNew) {
+        if (this.maxId && !loadNew) {
             params.max_id = this.maxId;
         }
 
@@ -99,7 +97,7 @@ abstract class BaseTimeline implements Timeline {
                 tweets = tweets.statuses;
             };
 
-            if (this.getNew) {
+            if (loadNew) {
                 tweets = tweets.reverse();
             } else {
                 // older tweet has a duplicate entry
@@ -107,7 +105,7 @@ abstract class BaseTimeline implements Timeline {
             }
 
             tweets.forEach((value) => {
-                if (this.getNew) {
+                if (loadNew) {
                     // don't cache more than 1000 tweets
                     if (self.tweets.unshift(Tweet.fromJson(value)) >= 1000) {
                         self.tweets.pop();
@@ -126,9 +124,9 @@ abstract class BaseTimeline implements Timeline {
         });
     }
 
-    getData(): Thenable<any> {
+    getData(loadNew: boolean): Thenable<any> {
         const self = this;
-        return this.getTweets().then(() => {
+        return this.getTweets(loadNew).then(() => {
             return {
                 title: self.title,
                 type: self.type,
@@ -195,9 +193,9 @@ class UserTimeline extends BaseTimeline {
         return new UserTimeline();
     }
     
-    getData(): Thenable<any> {
+    getData(loadNew: boolean): Thenable<any> {
         const self = this;
-        return this.getTweets().then(() => {
+        return this.getTweets(loadNew).then(() => {
             return TwitterClient.get(self.profileEndPoint, { include_entities: true }).then((user) => {
                 var userProfile = User.fromJson(user);
                 return {
@@ -225,10 +223,10 @@ class OtherUserTimeline extends BaseTimeline {
         this.params.screen_name = screenName;
     }
 
-    getData(): Thenable<any> {
+    getData(loadNew: boolean): Thenable<any> {
         const self = this;
-        console.log('OtherUsertimeline: getNew ' + this.getNew);
-        return this.getTweets().then(() => {
+        console.log('OtherUsertimeline: getNew ' + loadNew);
+        return this.getTweets(loadNew).then(() => {
             return TwitterClient.get(self.profileEndPoint, { screen_name: self.query, include_entities: true }).then((user) => {
                 var userProfile = User.fromJson(user);
                 return {
@@ -257,18 +255,18 @@ class SearchTimeline extends BaseTimeline {
         this.keyword = keyword;
     }
 
-    parentGetNew(): Thenable<void> {
-        return super.getTweets();
+    private parentGetNew(loadNew: boolean): Thenable<void> {
+        return super.getTweets(loadNew);
     }
 
-    getTweets(): Thenable<void> {
+    getTweets(loadNew: boolean): Thenable<void> {
         const self = this;
 
         var params = Object.assign({}, this.params);
-        if (this.sinceId && this.getNew) {
+        if (this.sinceId && loadNew) {
             params.since_id = this.sinceId;
         }
-        if (this.maxId && !this.getNew) {
+        if (this.maxId && !loadNew) {
             params.max_id = this.maxId;
         }
 
@@ -282,7 +280,7 @@ class SearchTimeline extends BaseTimeline {
             self.params.id = (<any[]>tweets).map<string>((value): string => { return value.id_str; }).join(',');
             console.log('Search results: ' + self.params.id);
             self.params.include_entities = true;
-            return self.parentGetNew();
+            return self.parentGetNew(loadNew);
         });
     }
 }

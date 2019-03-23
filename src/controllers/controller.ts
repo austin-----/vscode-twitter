@@ -30,9 +30,9 @@ export default class MainController implements vscode.Disposable {
     }
 
     private openTimelineOfType(type: timeline.TimelineType, param?: string) {
-        console.log('Opening timeline ' + timeline.TimelineType[type]);
+        console.log('Opening timeline ' + type);
         var uri = this.contentProvider.getUri(type, param == null ? null : querystring.escape(param));
-        this.webviewController.openTimeline('Opening timeline ' + timeline.TimelineType[type] + ' ...', uri);
+        this.webviewController.openTimeline('Opening timeline ' + type + ' ...', uri);
     }
 
     private registerCommand(command: string) {

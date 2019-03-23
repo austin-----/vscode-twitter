@@ -18,7 +18,7 @@
 <% } %>
 
 <p>
-<%- include('linkbutton', {text: replySymbol, msg: {}}) -%>
+<%- include('linkbutton', {text: replySymbol, msg: {cmd:'reply', args:{id:tweet.id, user:tweet.user.screenName}}}) -%>
 <%- spaceSeparator %>
 <span class="<%= tweet.retweeted ? 'retweeted' : '' %>"><%- include('linkbutton', {text: retweetSymbol + (tweet.retweetCount == 0 ? '' : ' ' + tweet.retweetCount + ' '), msg: {}}) -%></span>
 <%- spaceSeparator %>

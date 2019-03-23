@@ -19,7 +19,7 @@
         
     <body>
         <div style="padding-right:16px;">
-            <h1><%= title %>&nbsp;<%- include('linkbutton', {text: refreshSymbol, msg: {}}) -%>&nbsp;&nbsp; 
+            <h1><%= title %>&nbsp;<%- include('linkbutton', {text: refreshSymbol, msg: {cmd:'refresh', args:{loadNew:true}}}) -%>&nbsp;&nbsp; 
                 <span style = "font-size:0.5em;">Last updated at <%= moment().format('h:mm A, MMM D, YYYY') %></span>
             </h1>
             <% if (type == 'user' || type == 'other') { %>
@@ -32,7 +32,7 @@
             <%- include('tweet', {tweet, quoted: false, moment}) -%>
             <% }) %>
             </div>
-            <center><h1> Load More</h1></center>
+            <center><h1> <%- include('linkbutton',  {text: 'Load More', msg: {cmd:'refresh', args:{loadNew:false}}}) -%></h1></center>
         </div>
     </body>
 </html>

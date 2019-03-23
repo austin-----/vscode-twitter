@@ -27,7 +27,7 @@ export default class TwitterTimelineContentProvider implements vscode.TextDocume
                 } else {
                     var tl = timeline.TimelineFactory.getTimeline(type, uri.query);
                     if (tl != null) {
-                        return tl.getData().then(data => { return WebView.GetWebViewContent(self.context, type, data); });
+                        return tl.getData(getNew).then(data => { return WebView.GetWebViewContent(self.context, type, data); });
                     }
                 }
             }

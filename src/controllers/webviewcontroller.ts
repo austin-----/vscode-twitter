@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as querystring from 'querystring';
 import TwitterTimelineContentProvider from '../models/content';
+import TwitterClient from '../twitter';
 import * as timeline from '../models/timeline';
 import View from '../views/view';
 
@@ -28,7 +29,16 @@ export class WebViewController implements vscode.Disposable {
         this.view = view;
     }
 
-    getWebViewPanel (uri: vscode.Uri) : Thenable<vscode.WebviewPanel> {
+    private refreshWebViewPanel (uri: vscode.Uri, loadNew: boolean): Thenable<void> {
+        var uri2 = uri.with({fragment: loadNew ? '' : 'false'});
+        return this.getWebViewPanel(uri).then(panel => {
+            this.contentProvider.provideTextDocumentContent(uri2).then(html => {
+                panel.webview.html = html;
+            })
+        });
+    }
+
+    private getWebViewPanel (uri: vscode.Uri) : Thenable<vscode.WebviewPanel> {
 
         if (this.webViews[uri.toString()] != null) {
             return new Promise((resolve) => {
@@ -36,10 +46,10 @@ export class WebViewController implements vscode.Disposable {
             });
         }
 
-        return vscode.workspace.openTextDocument(uri).then(doc => {
+        return this.contentProvider.provideTextDocumentContent(uri).then(html => {
             var panel = vscode.window.createWebviewPanel(
                 'twitter',
-                doc.fileName,
+                uri.fsPath,
                 vscode.ViewColumn.Beside,
                 {
                     enableScripts: true,
@@ -49,10 +59,10 @@ export class WebViewController implements vscode.Disposable {
 
             this.webViews[uri.toString()] = panel;
 
-            panel.webview.html = doc.getText();
+            panel.webview.html = html;
 
             panel.webview.onDidReceiveMessage(msg => {
-                this.onCommand(msg.cmd, msg.args);
+                this.onCommand(msg.cmd, msg.args, uri, panel.webview);
             }, this);
 
             panel.onDidDispose(
@@ -62,8 +72,6 @@ export class WebViewController implements vscode.Disposable {
                 this);
 
             return panel;
-        }, error => {
-            console.log('Error: ' + error);
         });
     }
 
@@ -91,13 +99,19 @@ export class WebViewController implements vscode.Disposable {
         this.openTimeline('Opening image ' + url + ' ...', uri);
     }
 
-    onCommand(command: string, args) {
+    onCommand(command: string, args, uri: vscode.Uri, webview: vscode.Webview) {
         switch (command) {
             case WebViewCommand.User:
                 this.onCmdUser(args.screenName);
             break;
             case WebViewCommand.Search:
                 this.onCmdSearch(args.value);
+            break;
+            case WebViewCommand.Refresh:
+                this.onCmdRefresh(uri, args.loadNew);
+            break;
+            case WebViewCommand.Reply:
+                this.onCmdReply(args.id, args.user);
         }
     }
 
@@ -109,16 +123,27 @@ export class WebViewController implements vscode.Disposable {
         this.openSearchTimeline(value);
     }
 
+    private onCmdRefresh(uri: vscode.Uri, loadNew: boolean) {
+        vscode.window.setStatusBarMessage('Loading ' + loadNew ? 'new ' : 'old ' + ' tweets', 
+            this.refreshWebViewPanel(uri, loadNew));
+    }
+
+    private onCmdReply(id: string, user: string) {	
+        this.view.showReplyInputBox(user).then(content => {	
+            if (content) {	
+                console.log("Replying... " + content);	
+                vscode.window.setStatusBarMessage('Replying status...',	
+                    TwitterClient.reply(content, id).then(result => {	
+                        vscode.window.showInformationMessage('Your reply was posted.');	
+                    }, (error) => {	
+                        vscode.window.showErrorMessage('Failed to reply: ' + error);	
+                    })	
+                );	
+            }	
+        });	
+    }
+
     /*
-    this.service.addHandler('/search/:q', LocalServiceEndpoint.Search, function(req, res) {
-        res.send('Searching for ' + req.params.q);
-        self.openSearchTimeline(req.params.q);
-    });
-    
-    this.service.addHandler('/user/:screen_name', LocalServiceEndpoint.User, function(req, res) {
-        res.send('Searching for @' + req.params.screen_name);
-        self.openOtherUserTimeline(req.params.screen_name);
-    });
     
     this.service.addHandler('/image/:img', LocalServiceEndpoint.Image, function(req, res) {
         const image = decodeURIComponent(req.params.img);
@@ -126,20 +151,12 @@ export class WebViewController implements vscode.Disposable {
         self.openImage(image);
     });
     
-    this.service.addHandler('/refresh/:getnew/:type/:query?', LocalServiceEndpoint.Refresh, function(req, res) {
-        res.send('Refreshing ' + req.params.getnew);
-        console.log('Refreshing ' + req.params.getnew);
-        const type = parseInt(req.params.type);
-        const uri = self.contentProvider.getUri(type, req.params.query == null ? null : querystring.escape(req.params.query));
-        const tl = timeline.TimelineFactory.getTimeline(type, uri.query);
-        tl.getNew = req.params.getnew != 'false';
-        self.contentProvider.update(uri);
-    });
-    
     this.service.addHandler('/reply/:id/:user', LocalServiceEndpoint.Reply, function(req, res) {
         res.send('');
         self.twitterReplyInternal(req.params.id, req.params.user);
     });
+
+    
     
     this.service.addHandler('/retweet/:id/:url/:brief', LocalServiceEndpoint.Retweet, function(req, res) {
         vscode.window.showInformationMessage('Would you like to Retweet or Comment?', 'Comment', 'Retweet').then(select => {
