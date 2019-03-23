@@ -3,11 +3,11 @@
 %>
 
 <% if (type == 'tweet') { %>
-<img src="<%= user.image %>"/>&nbsp;<%- include('linkbutton', {text: user.name, title: '@'+user.screenName, msg:{}}) -%>
+<img src="<%= user.image %>"/>&nbsp;<%- include('linkbutton', {text: user.name, title: '@'+user.screenName, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
 <% } else if (type == 'retweet') { %>
-<%= user.name %>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg:{}}) -%>
+<%= user.name %>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
 <% } else if (type == 'quoted') { %>
-<strong><%= user.name %></strong>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg:{}}) -%>
+<strong><%= user.name %></strong>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
 <% } else if (type == 'profile') { %>
 
 <div style="float: left; margin-right: 1em;">
@@ -21,7 +21,7 @@
 </span>
 &nbsp;&nbsp;<%= '@' + user.screenName %>
 <%- barSeparator -%>
-<%- include('linkbutton', {text: user.follwoing ? 'Following' : '<span class="unfollow">Not Following', title: user.name, msg: {}}) -%>
+<%- include('linkbutton', {text: user.following ? 'Following' : '<span class="unfollow">Not Following', title: user.name, msg: {}}) -%>
 </p>
 
 <% if (user.url != null) { %>

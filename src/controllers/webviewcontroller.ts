@@ -5,16 +5,16 @@ import * as timeline from '../models/timeline';
 import View from '../views/view';
 
 export enum WebViewCommand {
-    User = 'User',
-    Search = 'Search',
-    Image = 'Image',
-    Refresh = 'Refresh',
-    Reply = 'Reply',
-    Retweet = 'Retweet',
-    Like = 'Like',
-    Unlike = 'Unlike',
-    Follow = 'Follow',
-    Unfollow = 'Unfollow'
+    User = 'user',
+    Search = 'search',
+    Image = 'image',
+    Refresh = 'refresh',
+    Reply = 'reply',
+    Retweet = 'retweet',
+    Like = 'like',
+    Unlike = 'unlike',
+    Follow = 'follow',
+    Unfollow = 'unfollow'
 }
 
 export class WebViewController implements vscode.Disposable {
@@ -52,7 +52,7 @@ export class WebViewController implements vscode.Disposable {
             panel.webview.html = doc.getText();
 
             panel.webview.onDidReceiveMessage(msg => {
-                this.onCommand(WebViewCommand[<string>msg.command], msg.args);
+                this.onCommand(msg.cmd, msg.args);
             }, this);
 
             panel.onDidDispose(
@@ -91,7 +91,7 @@ export class WebViewController implements vscode.Disposable {
         this.openTimeline('Opening image ' + url + ' ...', uri);
     }
 
-    onCommand(command: WebViewCommand, args) {
+    onCommand(command: string, args) {
         switch (command) {
             case WebViewCommand.User:
                 this.onCmdUser(args.screenName);
