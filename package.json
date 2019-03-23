@@ -2,7 +2,7 @@
   "name": "vscode-twitter",
   "displayName": "Twitter Client",
   "description": "Twitter in VS Code",
-  "icon": "logo.svg",
+  "icon": "logo.png",
   "version": "0.8.0",
   "publisher": "austin",
   "engines": {
