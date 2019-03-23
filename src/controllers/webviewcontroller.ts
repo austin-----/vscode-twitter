@@ -4,6 +4,7 @@ import TwitterTimelineContentProvider from '../models/content';
 import TwitterClient from '../twitter';
 import * as timeline from '../models/timeline';
 import View from '../views/view';
+import WebView from '../views/webview';
 
 export enum WebViewCommand {
     User = 'user',
@@ -19,12 +20,13 @@ export enum WebViewCommand {
 }
 
 export class WebViewController implements vscode.Disposable {
-
+    private extensionContext: vscode.ExtensionContext;
     private webViews = {};
     private contentProvider: TwitterTimelineContentProvider;
     private view: View;
 
-    constructor(contentProvider: TwitterTimelineContentProvider, view: View) {
+    constructor(extensionContext: vscode.ExtensionContext, contentProvider: TwitterTimelineContentProvider, view: View) {
+        this.extensionContext = extensionContext;
         this.contentProvider = contentProvider;
         this.view = view;
     }
@@ -49,7 +51,7 @@ export class WebViewController implements vscode.Disposable {
         return this.contentProvider.provideTextDocumentContent(uri).then(html => {
             var panel = vscode.window.createWebviewPanel(
                 'twitter',
-                uri.fsPath,
+                uri.fsPath.substr(0, 30),
                 vscode.ViewColumn.Beside,
                 {
                     enableScripts: true,
@@ -72,7 +74,7 @@ export class WebViewController implements vscode.Disposable {
                 this);
 
             return panel;
-        });
+        }, error => {console.log(error)});
     }
 
     openTimeline(message: string, uri: vscode.Uri) {
@@ -112,6 +114,27 @@ export class WebViewController implements vscode.Disposable {
             break;
             case WebViewCommand.Reply:
                 this.onCmdReply(args.id, args.user);
+            break;
+            case WebViewCommand.Retweet:
+                this.onCmdRetweet(args.id, args.url, args.brief, webview, args.hid);
+            break;
+            case WebViewCommand.Like:
+                this.onCmdLike(args.id, false, webview, args.hid);
+            break;
+            case WebViewCommand.Unlike:
+                this.onCmdLike(args.id, true, webview, args.hid);
+            break;
+            case WebViewCommand.Follow:
+                this.onCmdFollow(args.screenName, false, webview, args.hid);
+            break;
+            case WebViewCommand.Unfollow:
+                this.onCmdFollow(args.screenName, true, webview, args.hid);
+            break;
+            case WebViewCommand.Image:
+                this.openImage(args.src);
+            break;
+            default:
+                console.log('Error: unknown command :' + command );
         }
     }
 
@@ -143,97 +166,56 @@ export class WebViewController implements vscode.Disposable {
         });	
     }
 
-    /*
-    
-    this.service.addHandler('/image/:img', LocalServiceEndpoint.Image, function(req, res) {
-        const image = decodeURIComponent(req.params.img);
-        res.send('Opening image ' + image);
-        self.openImage(image);
-    });
-    
-    this.service.addHandler('/reply/:id/:user', LocalServiceEndpoint.Reply, function(req, res) {
-        res.send('');
-        self.twitterReplyInternal(req.params.id, req.params.user);
-    });
-
-    
-    
-    this.service.addHandler('/retweet/:id/:url/:brief', LocalServiceEndpoint.Retweet, function(req, res) {
+    private onCmdRetweet(id: string, url: string, brief: string, webview: vscode.Webview, hid: string) {
         vscode.window.showInformationMessage('Would you like to Retweet or Comment?', 'Comment', 'Retweet').then(select => {
             if (select == 'Retweet') {
-                TwitterClient.retweet(req.params.id).then(content => {
-                    res.send(content);
+                TwitterClient.retweet(id).then(tweet => {
+                    vscode.window.showInformationMessage('Your retweet was posted.');
+                    WebView.GetRetweetLink(this.extensionContext, {tweet}).then(html => {
+                        return webview.postMessage({hid, html})
+                    }, error => {console.log(error);});
                 }, (error: string) => {
                     vscode.window.showErrorMessage('Failed to retweet: ' + error);
-                    res.send('');
                 });
-            } else {
-                res.send('');
-                if (select == 'Comment') {
-                    const url = querystring.unescape(req.params.url);
-                    const brief = querystring.unescape(req.params.brief);
-                    self.view.showCommentInputBox(brief + '...').then(content => {
-                        if (content) {
-                            TwitterClient.post(content + ' ' + url).then(() => {
-                                vscode.window.showInformationMessage('Your comment was posted.');
-                            }, (error: string) => {
-                                vscode.window.showErrorMessage('Failed to post comment: ' + error);
-                            });
-                        }
-                    });
-                }
+            } else if (select == 'Comment') {
+                this.view.showCommentInputBox(brief + '...').then(content => {
+                    if (content) {
+                        TwitterClient.post(content + ' ' + url).then(() => {
+                            vscode.window.showInformationMessage('Your comment was posted.');
+                        }, (error: string) => {
+                            vscode.window.showErrorMessage('Failed to post comment: ' + error);
+                        });
+                    }
+                });
             }
         });
-    });
-    
-    this.service.addHandler('/like/:id', LocalServiceEndpoint.Like, function(req, res) {
-        TwitterClient.like(req.params.id, false).then(content => {
-            res.send(content);
-        }, (error: string) => {
-            vscode.window.showErrorMessage('Failed to like: ' + error);
-        });
-    });
-    
-    this.service.addHandler('/unlike/:id', LocalServiceEndpoint.Unlike, function(req, res) {
-        TwitterClient.like(req.params.id, true).then(content => {
-            res.send(content);
-        }, (error: string) => {
-            vscode.window.showErrorMessage('Failed to unlike: ' + error);
-        });
-    });
-    
-    this.service.addHandler('/follow/:user', LocalServiceEndpoint.Follow, function(req, res) {
-        TwitterClient.follow(req.params.user, false).then(content => {
-            res.send(content);
-        }, (error: string) => {
-            vscode.window.showErrorMessage('Failed to follow: ' + error);
-        });
-    });
-    
-    this.service.addHandler('/unfollow/:user', LocalServiceEndpoint.Unfollow, function(req, res) {
-        TwitterClient.follow(req.params.user, true).then(content => {
-            res.send(content);
-        }, (error: string) => {
-            vscode.window.showErrorMessage('Failed to unfollow: ' + error);
-        });
-    });
+    }
 
-    this.service.addHandler('/css', LocalServiceEndpoint.Css, function(req, res) {
-        https.get('https://raw.githubusercontent.com/Microsoft/vscode/master/extensions/markdown/media/markdown.css', function(message) {
-            var content = "";
-            message.on('data', function(chunk){
-                content += chunk;
-            });
-            message.on('end', function(){
-                res.setHeader('Content-Type', 'text/css');
-                res.send(content);
-            });
-            message.resume();
+    private onCmdLike(id: string, unlike: boolean, webview: vscode.Webview, hid: string) {
+        TwitterClient.like(id, unlike).then(tweet => {
+            WebView.GetLikeLink(this.extensionContext, {tweet}).then(html => {
+                return webview.postMessage({hid, html})
+            }, error => {console.log(error);});
+        }, (error: string) => {
+            vscode.window.showErrorMessage('Failed to ' + (unlike ? 'unlike' : 'like') + ': ' + error);
         });
-    });
-    */
+    }
+
+    private onCmdFollow(screenName: string, unfollow: boolean, webview: vscode.Webview, hid: string) {
+        TwitterClient.follow(screenName, unfollow).then(user => {
+            WebView.GetFollowLink(this.extensionContext, {user}).then(html => {
+                return webview.postMessage({hid, html})
+            }, error => {console.log(error);});
+        }, (error: string) => {
+            vscode.window.showErrorMessage('Failed to ' + (unfollow ? 'unfollow' : 'follow') + ': ' + error);
+        });
+    }
 
     dispose() {
-        
+        for(var uri in this.webViews) {
+            if (this.webViews[uri] != null) {
+                (<vscode.WebviewPanel>this.webViews[uri]).dispose();
+            }
+        }
     }
 }

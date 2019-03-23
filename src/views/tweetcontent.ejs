@@ -7,7 +7,7 @@
 <% } %>
 
 <p>
-<%- include('user', {user: tweet.user, quoted, type: quoted ? 'quoted' : 'tweet'}) -%> 
+<%- include('user', {user: tweet.user, quoted, type: quoted ? 'quoted' : 'tweet', uniqid}) -%> 
 <% if (!quoted) {%>
 <%= dotSeparator %> <%= moment(tweet.created.replace(/( +)/, ' UTC$1')).fromNow() %> 
 <% } %>

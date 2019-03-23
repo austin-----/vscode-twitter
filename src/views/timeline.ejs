@@ -9,11 +9,23 @@
             *{font-size: inherit;} 
             h1{font-size: 2em;} 
             span.liked{color: red;} 
-            span.retweeted{color: green;} 
-            span.unfollow{color: red;}
+            span.liked > a {color: red;} 
+            span.retweeted{color: green;}
+            span.retweeted > a {color: green}
+            span.unfollowed{color: red;}
+            span.unfollowed > a{color: red;}
+            span.followed{color: green;}
+            span.followed > a{color: green;}
         </style>
         <script>
             const vscode = acquireVsCodeApi();
+
+            window.addEventListener('message', event => {
+                const message = event.data; // The JSON data our extension sent
+                var hid = message.hid;
+                var html = message.html;
+                document.getElementById(hid).outerHTML = html;
+            });
         </script>
     </head>
         
@@ -24,12 +36,12 @@
             </h1>
             <% if (type == 'user' || type == 'other') { %>
             <div id = "user">
-                <%- include('user', {user, quoted: false, type: 'profile', moment}) -%>
+                <%- include('user', {user, quoted: false, type: 'profile', moment, uniqid}) -%>
             </div>
             <% } %>
             <div id = "tweets">
             <% tweets.forEach(tweet => { %>
-            <%- include('tweet', {tweet, quoted: false, moment}) -%>
+            <%- include('tweet', {tweet, quoted: false, moment, uniqid}) -%>
             <% }) %>
             </div>
             <center><h1> <%- include('linkbutton',  {text: 'Load More', msg: {cmd:'refresh', args:{loadNew:false}}}) -%></h1></center>

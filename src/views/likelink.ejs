@@ -1,0 +1,5 @@
+<% 
+    const heartSymbol = '\u2661';
+    var like_id = uniqid() 
+%>
+<span id="<%= like_id %>" class="<%= tweet.liked ? 'liked' : '' %>"><%- include('linkbutton', {text: heartSymbol + (tweet.likeCount == 0 ? '' : ' ' + tweet.likeCount + ' '), title: 'Click to ' + (tweet.liked ? 'unlike' : 'like'), msg: {cmd: tweet.liked ? 'unlike' : 'like', args: {hid: like_id, id: tweet.id}}}) -%></span>

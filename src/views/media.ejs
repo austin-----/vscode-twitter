@@ -15,6 +15,6 @@
     </video>
     <% } %>
     <% } else { %>
-        <img src="<%= m.media_url_https + ':small' %>"/>
+    <%- include('linkbutton', {title: 'Click to view larger image', text: '<img style="border-radius:10px;" src="' + m.media_url_https + (quoted ? ':thumb' : ':thumb') + '"/>', msg: {cmd: 'image', args: {src: m.media_url_https + ':large'}}}); -%>
     <% } %>
 <% },) %>

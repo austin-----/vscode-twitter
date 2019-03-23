@@ -1,28 +1,27 @@
 <%
     const spaceSeparator = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
     const retweetSymbol = '\u267A';
-    const heartSymbol = '\u2661';
     const replySymbol = 'Reply';
 %>
 <div>
 
 <% if (tweet.retweetedStatus) { %>
-<p> <%= retweetSymbol %> <%- include('user', {user:tweet.user, quoted, type: 'retweet'}) -%> Retweeted</p>
+<p> <%= retweetSymbol %> <%- include('user', {user:tweet.user, quoted, type: 'retweet', uniqid}) -%> Retweeted</p>
 <%- include('tweet', {tweet: tweet.retweetedStatus, quoted, moment}) -%>
 <% } else { %>
 
-<%- include('tweetcontent', {tweet, quoted, moment}) -%>
+<%- include('tweetcontent', {tweet, quoted, moment, uniqid}) -%>
 
 <% if (tweet.quoted != null) { %>
-<%- include('tweetcontent', {tweet: tweet.quoted, quoted: true, moment}) -%>
+<%- include('tweetcontent', {tweet: tweet.quoted, quoted: true, moment, uniqid}) -%>
 <% } %>
 
 <p>
-<%- include('linkbutton', {text: replySymbol, msg: {cmd:'reply', args:{id:tweet.id, user:tweet.user.screenName}}}) -%>
+<%- include('linkbutton', {text: replySymbol, title: 'Click to reply', msg: {cmd:'reply', args:{id:tweet.id, user:tweet.user.screenName}}}) -%>
 <%- spaceSeparator %>
-<span class="<%= tweet.retweeted ? 'retweeted' : '' %>"><%- include('linkbutton', {text: retweetSymbol + (tweet.retweetCount == 0 ? '' : ' ' + tweet.retweetCount + ' '), msg: {}}) -%></span>
+<%- include('retweetlink', {tweet, uniqid}) -%>
 <%- spaceSeparator %>
-<span class="<%= tweet.linked ? 'liked' : '' %>"><%- include('linkbutton', {text: heartSymbol + (tweet.likeCount == 0 ? '' : ' ' + tweet.likeCount + ' '), msg: {}}) -%></span>
+<%- include('likelink', {tweet, uniqid}) -%>
 </p>
 </div>
 <hr/>

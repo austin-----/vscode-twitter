@@ -26,7 +26,7 @@ export default class MainController implements vscode.Disposable {
         this.extensionContext = context;
         this.view = view;
         this.contentProvider = new TwitterTimelineContentProvider(context);
-        this.webviewController = new WebViewController(this.contentProvider, view);
+        this.webviewController = new WebViewController(context, this.contentProvider, view);
     }
 
     private openTimelineOfType(type: timeline.TimelineType, param?: string) {

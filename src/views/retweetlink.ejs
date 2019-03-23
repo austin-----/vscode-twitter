@@ -1,0 +1,5 @@
+<% 
+    const retweetSymbol = '\u267A';
+    var retweet_id = uniqid() 
+%>
+<span id="<%= retweet_id %>" class="<%= tweet.retweeted ? 'retweeted' : '' %>"><%- include('linkbutton', {text: retweetSymbol + (tweet.retweetCount == 0 ? '' : ' ' + tweet.retweetCount + ' '), title: 'Click to retweet', msg: {cmd:'retweet', args:{hid: retweet_id, id:tweet.id, url: 'https://twitter.com/' + tweet.user.screenName + '/status/' + tweet.id, brief: '@' + tweet.user.screenName + ': ' + tweet.text.substr(0, 10)}}}) -%></span>

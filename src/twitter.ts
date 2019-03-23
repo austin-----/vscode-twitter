@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import Tweet from './models/tweet';
+import User from './models/user';
 
 var Twitter = require('twitter');
 
@@ -78,13 +79,13 @@ export default class TwitterClient {
         return TwitterClient.post(content, id);
     }
     
-    static like(id: string, unlike: boolean): Thenable<string> {
+    static like(id: string, unlike: boolean): Thenable<Tweet> {
         const action = (unlike ? 'destroy' : 'create');
         return new Promise((resolve, reject) => {
-            TwitterClient.client.post('favorites/' + action, {id: id, include_entities: false}, function(error, tweet){
+            TwitterClient.client.post('favorites/' + action, {id: id, include_entities: false, tweet_mode: 'extended'}, function(error, tweet){
                 if (!error) {
                     const t = Tweet.fromJson(tweet);
-                    resolve(JSON.stringify(t));
+                    resolve(t);
                 } else {
                     console.error(error);
 					var msg = error.map((value) => { return value.message; }).join(';');
@@ -94,12 +95,12 @@ export default class TwitterClient {
         });
     }
     
-    static retweet(id: string): Thenable<string> {
+    static retweet(id: string): Thenable<Tweet> {
         return new Promise((resolve, reject) => {
-            this.client.post('statuses/retweet', {id: id}, function(error, tweet){
+            TwitterClient.client.post('statuses/retweet', {id: id, tweet_mode: 'extended'}, function(error, tweet){
                 if (!error) {
                     const t = Tweet.fromJson(tweet);
-                    resolve(JSON.stringify(t));
+                    resolve(t);
                 } else {
                     console.error(error);
 					var msg = error.map((value) => { return value.message; }).join(';');
@@ -109,12 +110,12 @@ export default class TwitterClient {
         });
     }
     
-    static follow(screenName: string, unfollow: boolean) {
+    static follow(screenName: string, unfollow: boolean):Thenable<User> {
         const action = (unfollow ? 'destroy' : 'create');
         return new Promise((resolve, reject) => {
-            TwitterClient.client.post('friendships/' + action, {screen_name: screenName}, function(error){
+            TwitterClient.client.post('friendships/' + action, {screen_name: screenName}, function(error, user){
                 if (!error) {
-                    resolve('');
+                    resolve(User.fromJson(user));
                 } else {
                     console.error(error);
 					var msg = error.map((value) => { return value.message; }).join(';');
