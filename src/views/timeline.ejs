@@ -36,12 +36,12 @@
             </h1>
             <% if (type == 'user' || type == 'other') { %>
             <div id = "user">
-                <%- include('user', {user, quoted: false, type: 'profile', moment, uniqid}) -%>
+                <%- include('user', {user, quoted: false, type: 'profile', moment, uniqid, nomedia}) -%>
             </div>
             <% } %>
             <div id = "tweets">
             <% tweets.forEach(tweet => { %>
-            <%- include('tweet', {tweet, quoted: false, moment, uniqid}) -%>
+            <%- include('tweet', {tweet, quoted: false, moment, uniqid, nomedia}) -%>
             <% }) %>
             </div>
             <center><h1> <%- include('linkbutton',  {text: 'Load More', title: 'Click to load older tweets', msg: {cmd:'refresh', args:{loadNew:false}}}) -%></h1></center>

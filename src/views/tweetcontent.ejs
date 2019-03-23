@@ -7,7 +7,7 @@
 <% } %>
 
 <p>
-<%- include('user', {user: tweet.user, quoted, type: quoted ? 'quoted' : 'tweet', uniqid}) -%> 
+<%- include('user', {user: tweet.user, quoted, type: quoted ? 'quoted' : 'tweet', uniqid, nomedia}) -%> 
 <% if (!quoted) {%>
 <%= dotSeparator %> <%= moment(tweet.created.replace(/( +)/, ' UTC$1')).fromNow() %> 
 <% } %>
@@ -19,7 +19,7 @@
 </p>
 
 <p>
-<% if (tweet.entity.media != null) { %>
+<% if (!nomedia && tweet.entity.media != null) { %>
 <%- include('media', {media: tweet.entity.media, quoted}) -%>
 <% } %>
 </p>

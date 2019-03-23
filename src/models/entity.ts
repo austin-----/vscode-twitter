@@ -1,4 +1,5 @@
 import * as punycode from 'punycode';
+import * as vscode from 'vscode';
 
 export enum EntityType {
     Text = 'text',
@@ -118,5 +119,10 @@ export class Entity {
             }
         }
         return entity;
+    }
+
+    static get noMedia(): boolean {
+        var configuration = vscode.workspace.getConfiguration('twitter');
+        return configuration.get('nomedia', false);
     }
 }

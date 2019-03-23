@@ -39,7 +39,7 @@ export default class Tweet {
         }
 	    
         tweet.entity = Entity.fromJson(tweetJson.entities, tweetJson.extended_entities);
-        tweet.parsedText = tweet.entity.processText(tweet.text, TrailingUrlBehavior.Remove); //no media: urlify
+        tweet.parsedText = tweet.entity.processText(tweet.text, (Entity.noMedia ? TrailingUrlBehavior.Urlify : TrailingUrlBehavior.Remove)); //no media: urlify
 
         return tweet;
     }

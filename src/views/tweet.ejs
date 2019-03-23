@@ -6,14 +6,14 @@
 <div>
 
 <% if (tweet.retweetedStatus) { %>
-<p> <%= retweetSymbol %> <%- include('user', {user:tweet.user, quoted, type: 'retweet', uniqid}) -%> Retweeted</p>
+<p> <%= retweetSymbol %> <%- include('user', {user:tweet.user, quoted, type: 'retweet', uniqid, nomedia}) -%> Retweeted</p>
 <%- include('tweet', {tweet: tweet.retweetedStatus, quoted, moment}) -%>
 <% } else { %>
 
-<%- include('tweetcontent', {tweet, quoted, moment, uniqid}) -%>
+<%- include('tweetcontent', {tweet, quoted, moment, uniqid, nomedia}) -%>
 
 <% if (tweet.quoted != null) { %>
-<%- include('tweetcontent', {tweet: tweet.quoted, quoted: true, moment, uniqid}) -%>
+<%- include('tweetcontent', {tweet: tweet.quoted, quoted: true, moment, uniqid, nomedia}) -%>
 <% } %>
 
 <p>

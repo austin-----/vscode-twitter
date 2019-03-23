@@ -5,6 +5,11 @@ var moment = require('moment');
 var uniqid = require('uniqid');
 
 export default class WebView {
+    private static get noMedia(): boolean {
+        var configuration = vscode.workspace.getConfiguration('twitter');
+        return configuration.get('nomedia', false);
+    }
+
     static GetWebViewContent(context: vscode.ExtensionContext, type: TimelineType, data: any): Thenable<string> {
         return WebView.RenderWebContent(context, 'dist/views/timeline.ejs', data);
     }
@@ -24,6 +29,7 @@ export default class WebView {
     private static RenderWebContent(context: vscode.ExtensionContext, path: string, data: any): Thenable<string> {
         data.moment = moment;
         data.uniqid = uniqid;
+        data.nomedia = WebView.noMedia;
         return ejs.renderFile(context.asAbsolutePath(path), data);
     }
 }
