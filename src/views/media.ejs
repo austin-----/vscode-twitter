@@ -16,7 +16,7 @@
     <% } %>
     <% } else { %>
     <%- include('linkbutton', {title: 'Click to view larger image', msg: {cmd: 'image', args: {src: m.media_url_https + ':large'}}}); -%>
-    <% if (quoted) { %>
+    <% if (quoted || media.length > 1) { %>
     <img style="border-radius:8px;" src="<%= m.media_url_https + ':thumb' %>"/>
     <% } else { %>
     <div style="width:340px;max-height:480px;overflow: hidden;border-radius:8px;display:inline-block;"><img style="border-radius:8px;" src="<%= m.media_url_https + ':small' %>"/></div>

@@ -60,6 +60,7 @@ export default class TwitterClient {
         var payload: any = {status: status};
         if (inReplyToId != null) {
             payload.in_reply_to_status_id = inReplyToId;
+            payload.tweet_mode = 'extended';
         }
 		return new Promise((resolve, reject) => {
 			TwitterClient.client.post('statuses/update', payload, function(error, data) {
