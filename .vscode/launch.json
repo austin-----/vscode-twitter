@@ -10,7 +10,7 @@
 			"args": ["--extensionDevelopmentPath=${workspaceRoot}" ],
 			"stopOnEntry": false,
 			"sourceMaps": true,
-			"preLaunchTask": "npm",
+			"preLaunchTask": "webpack",
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			]
@@ -23,7 +23,7 @@
 			"args": ["--extensionDevelopmentPath=${workspaceRoot}", "--extensionTestsPath=${workspaceRoot}/out/test" ],
 			"stopOnEntry": false,
 			"sourceMaps": true,
-			"preLaunchTask": "npm"
+			"preLaunchTask": "test-compile"
 		}
 	]
 }

@@ -48,10 +48,6 @@ export default class Tweet {
 	    
         tweet.entity = Entity.fromJson(tweetJson.entities, tweetJson.extended_entities);
         
-        if (tweet.quoted) {
-            // remove last url entity if there is a quoted tweet (coz the url is for the quoted)
-            tweet.entity.urls = tweet.entity.urls.slice(0, -1);
-        }
         tweet.parsedText = tweet.entity.processText(tweet.text, tweet.displayTextRange); //no media: urlify
 
         return tweet;

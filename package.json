@@ -76,13 +76,8 @@
   },
   "scripts": {
     "vscode:prepublish": "webpack --mode production && cpx \"src/**/*.ejs\" dist",
-    "compile-tsc": "tsc -p ./",
-    "copy-ejs": "cpx \"src/**/*.ejs\" out/src",
+    "test-compile": "tsc -p ./",
     "compile": "webpack --mode none && cpx \"src/**/*.ejs\" dist",
-    "compile-test": "concurrently \"npm:compile-tsc\" \"npm:copy-ejs\"",
-    "watch-tsc": "tsc -watch -p ./",
-    "watch-ejs": "cpx \"src/**/*.ejs\" out/src -w",
-    "watch-test": "concurrently \"npm:watch-tsc\" \"npm:watch-ejs\"",
     "watch": "webpack --mode none --watch",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "npm run compile-test && node ./node_modules/vscode/bin/test"
