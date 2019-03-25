@@ -3,11 +3,28 @@
 %>
 
 <% if (type == 'tweet') { %>
-<% if (!nomedia) {%><img style="border-radius:50%" src="<%= user.image %>"/>&nbsp;<% } %><%- include('linkbutton', {text: user.name, title: '@'+user.screenName, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
+
+<% if (!nomedia) {%><img style="border-radius:50%" src="<%= user.image %>"/>&nbsp;<% } %>
+<strong>
+<%- include('linkbutton', {title: '@'+user.screenName, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
+<%= user.name %>
+<%- include('linkbuttonend') -%>
+</strong>&nbsp;@<%= user.screenName %>
+
 <% } else if (type == 'retweet') { %>
-<%= user.name %>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
+
+<%- include('linkbutton', {title: '@'+user.screenName, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
+<%= user.name %>
+<%- include('linkbuttonend') -%>
+
 <% } else if (type == 'quoted') { %>
-<strong><%= user.name %></strong>&nbsp;<%- include('linkbutton', {text: '@'+user.screenName, title: user.name, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
+
+<strong>
+<%- include('linkbutton', {title: '@'+user.screenName, msg: {cmd:'user', args: {screenName:user.screenName}}}) -%>
+<%= user.name %>
+<%- include('linkbuttonend') -%>
+</strong>&nbsp;@<%= user.screenName %>
+
 <% } else if (type == 'profile') { %>
 
 <% if (!nomedia) { %>

@@ -17,7 +17,9 @@
 <% } %>
 
 <p>
-<%- include('linkbutton', {text: replySymbol, title: 'Click to reply', msg: {cmd:'reply', args:{id:tweet.id, user:tweet.user.screenName}}}) -%>
+<%- include('linkbutton', {title: 'Click to reply', msg: {cmd:'reply', args:{id:tweet.id, user:tweet.user.screenName}}}) -%>
+<%= replySymbol %>
+<%- include('linkbuttonend') -%>
 <%- spaceSeparator %>
 <%- include('retweetlink', {tweet, uniqid}) -%>
 <%- spaceSeparator %>

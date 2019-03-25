@@ -1,5 +1,4 @@
 import * as punycode from 'punycode';
-import * as vscode from 'vscode';
 
 export enum EntityType {
     Text = 'text',
@@ -25,14 +24,12 @@ export class Entity {
     hashTags: any[];
     symbols: any[];
     urls: any[];
-    static urlReg = /(.*\b)(https\:\/\/t\.co\/[0-9a-zA-Z]+)$/;
     
-    processText(text: string, trailingUrlBehavior: TrailingUrlBehavior): [EntityType, any][] {
+    processText(text: string, displayRange: [number, number] = [0, text.length]): [EntityType, any][] {
         var normalized: number[] = <any>punycode.ucs2.decode(text);
 
         var indexArray: any[] = [];
 		
-        // user mentions
         if (this.userMentions) {
             indexArray = indexArray.concat(this.userMentions.map(u => { return { type: EntityType.UserMention, i0: u.indices[0], i1: u.indices[1], tag: u }; }));
         }
@@ -52,8 +49,10 @@ export class Entity {
         indexArray.sort((a, b) => { return a.i0 - b.i0; });
 
         var result = [];
-        var last = 0;
+        var last = displayRange[0];
         indexArray.forEach((value, index, array) => {
+            if (value.i0 > normalized.length || value.i0 < displayRange[0] || value.i1 > displayRange[1])return;
+
             if (value.i0 > last) {
                 result.push([EntityType.Text, {text: punycode.ucs2.encode(normalized.slice(last, value.i0))}]);
             }
@@ -77,21 +76,9 @@ export class Entity {
             last = value.i1;
         });
 
-        var trailingText = punycode.ucs2.encode(normalized.slice(last));
+        var trailingText = punycode.ucs2.encode(normalized.slice(last, displayRange[1]));
         if (trailingText.length > 0) {
-            if (trailingUrlBehavior != TrailingUrlBehavior.NoChange) {
-                var parts = trailingText.match(Entity.urlReg);
-                if (parts != null && parts.length == 3) {
-                    result.push([EntityType.Text, {text: parts[1]}]);
-                    if (trailingUrlBehavior != TrailingUrlBehavior.Remove) {
-                        result.push([EntityType.Url, {text: parts[2], url: parts[2]}]);
-                    }
-                } else {
-                    result.push([EntityType.Text, {text: trailingText}]);
-                }
-            } else {
-                result.push([EntityType.Text, {text: trailingText}]);
-            }
+            result.push([EntityType.Text, {text: trailingText}]);
         }
         
         return result;
@@ -119,10 +106,5 @@ export class Entity {
             }
         }
         return entity;
-    }
-
-    static get noMedia(): boolean {
-        var configuration = vscode.workspace.getConfiguration('twitter');
-        return configuration.get('nomedia', false);
     }
 }

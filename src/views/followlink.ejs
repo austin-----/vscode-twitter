@@ -2,5 +2,7 @@
     var hid = uniqid()
 %>
 <span id="<%= hid %>" class="<%= user.following ? 'followed' : 'unfollowed' %>">
-<%- include('linkbutton', {text: (user.following ? 'Following' : 'Not Following'), title: 'Click to ' + (user.following ? 'unfollow' : 'follow'), msg: {cmd: (user.following ? 'unfollow' : 'follow'), args: {screenName: user.screenName, hid: hid}}}) -%>
+<%- include('linkbutton', {title: 'Click to ' + (user.following ? 'unfollow' : 'follow'), msg: {cmd: (user.following ? 'unfollow' : 'follow'), args: {screenName: user.screenName, hid: hid}}}) -%>
+<%= (user.following ? 'Following' : 'Not Following') %>
+<%- include('linkbuttonend') -%>
 </span>

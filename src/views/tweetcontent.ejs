@@ -3,7 +3,7 @@
 %>
 
 <% if (quoted) { %> 
-<blockquote>
+<blockquote style="padding-left:16px;padding-right:20px;">
 <% } %>
 
 <p>
@@ -13,6 +13,14 @@
 <% } %>
 &nbsp;(<a href="<%= 'https://twitter.com/' + tweet.user.screenName + '/status/' + tweet.id %>">Details</a>)
 </p>
+
+<% if (tweet.replyTo) { %>
+<p> Replying to 
+<%- include('linkbutton', {title: '@' + tweet.replyTo, msg: {cmd:'user', args: {screenName:tweet.replyTo}}}) -%>
+<%= '@' + tweet.replyTo %>
+<%- include('linkbuttonend') -%> 
+</p>
+<% } %>
 
 <p>
 <%- include('parsedentities', {parts: tweet.parsedText}) -%>
