@@ -44,9 +44,13 @@
             </div>
             <% } %>
             <div id = "tweets">
+            <% if (tweets.length > 0) { %>
             <% tweets.forEach(tweet => { %>
             <%- include('tweet', {tweet, quoted: false, moment, uniqid, nomedia}) -%>
             <% }) %>
+            <% } else { %>
+            Sorry, we didn’t find any results.
+            <% } %>
             </div>
             <center>
             <h1>

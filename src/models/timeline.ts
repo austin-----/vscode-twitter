@@ -119,8 +119,10 @@ abstract class BaseTimeline implements Timeline {
                 }
             });
 
-            self.maxId = self.tweets[self.tweets.length - 1].id;
-            self.sinceId = self.tweets[0].id;
+            if (self.tweets.length > 0) {
+                self.maxId = self.tweets[self.tweets.length - 1].id;
+                self.sinceId = self.tweets[0].id;
+            }
         });
     }
 
