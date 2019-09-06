@@ -4,7 +4,7 @@
         const variants = m.video_info.variants;
         if (variants.length != 0) {
     %>
-    <video width="340" poster="<%= m.media_url_https %>" muted controls preload="none">
+    <video width="340" poster="<%= m.media_url_https %>" muted controls preload="metadata" src="<%= variants.find((video) => { return video.content_type.startsWith("video"); }).url %>">
     <%
         variants.filter((video, index, array) => { return video.content_type.startsWith("video"); }).forEach((video, index, array) => {
     %>
