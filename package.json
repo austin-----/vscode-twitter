@@ -79,23 +79,20 @@
     "test-compile": "tsc -p ./",
     "compile": "webpack --mode none && cpx \"src/**/*.ejs\" dist",
     "watch": "webpack --mode none --watch",
-    "postinstall": "node ./node_modules/vscode/bin/install",
-    "test": "npm run compile-test && node ./node_modules/vscode/bin/test"
+    "postinstall": "node ./node_modules/vscode/bin/install"
   },
   "devDependencies": {
     "@types/ejs": "^2.6.3",
-    "@types/mocha": "^2.2.42",
     "@types/node": "^10.12.21",
-    "concurrently": "^4.1.0",
+    "@types/vscode": "^1.31.0",
     "cpx": "^1.5.0",
     "file-loader": "^3.0.1",
-    "mocha": "2.3.3",
     "ts-loader": "^5.3.3",
     "tslint": "^5.12.1",
     "typescript": "^3.3.1",
-    "vscode": "^1.1.28",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0"
+    "vscode-test": "^1.1.28",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {
     "ejs": "^2.6.1",
